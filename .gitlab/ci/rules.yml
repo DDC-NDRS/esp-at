@@ -10,6 +10,18 @@
 .if-dev-push: &if-dev-push
   if: '$CI_COMMIT_REF_NAME != "master" && $CI_COMMIT_BRANCH !~ /^release\/v/ && $CI_COMMIT_TAG !~ /^v\d+\.\d+\.\d+(\.\d+)?($|-)/ && ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "web")'
 
+.if-at-integration-merged-result: &if-at-integration-merged-result
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_EVENT_TYPE == "merged_result" || $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train")'
+
+.if-at-integration-force-by-env: &if-at-integration-force-by-env
+  if: '$ESP_AT_INTEGRATION_CI == "1"'
+
+.if-at-integration-triggered-by-external: &if-at-integration-triggered-by-external
+  if: '($CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && (($ATHENA_WEBLINK != null && $ATHENA_WEBLINK != "") || ($CASES != null && $CASES != "") || ($SUBMODULES != null && $SUBMODULES != "") || ($BUILD_TARGETS != null && $BUILD_TARGETS != ""))'
+
+.if-at-integration-enabled-by-mr-note: &if-at-integration-enabled-by-mr-note
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_LABELS =~ /integration::(all\b|build_)/ || $CI_MERGE_REQUEST_LABELS =~ /ats_ci::debug/ || $CI_MERGE_REQUEST_DESCRIPTION =~ /\[ci-ats-debug\]/)'
+
 ############
 # Patterns #
 ############
@@ -52,6 +64,12 @@
 
 .rules:build:build_project:
   rules:
+    - <<: *if-at-integration-force-by-env
+      when: never
+    - <<: *if-at-integration-triggered-by-external
+      when: never
+    - <<: *if-at-integration-enabled-by-mr-note
+      when: never
     - <<: *if-protected-or-web-trigger
     - <<: *if-dev-push
       changes: *patterns-src
@@ -64,6 +82,12 @@
 
 .rules:build:build_project_on_protected:
   rules:
+    - <<: *if-at-integration-force-by-env
+      when: never
+    - <<: *if-at-integration-triggered-by-external
+      when: never
+    - <<: *if-at-integration-enabled-by-mr-note
+      when: never
     - <<: *if-protected-or-web-trigger
 
 .rules:deploy:docs_preview:
@@ -74,3 +98,12 @@
 .rules:deploy:docs_production:
   rules:
     - <<: *if-protected
+
+.rules:test:at_integration_pipeline:
+  rules:
+    - <<: *if-at-integration-merged-result
+      when: never
+    - <<: *if-at-integration-force-by-env
+    - <<: *if-at-integration-triggered-by-external
+    - <<: *if-at-integration-enabled-by-mr-note
+    - when: never
