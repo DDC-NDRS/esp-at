@@ -36,6 +36,8 @@ mfg_nvs_pattern = re.compile(b'\xAA\x50\x01\x02.{4}.{4}mfg_nvs')
 sec_size = 4096
 min_firmware_size = (1024 * 1024)
 para_partition_size = (4 * 1024)
+# NVS requires at least 3 pages: 2 data pages + 1 reserved empty page
+min_nvs_partition_size = (12 * 1024)
 
 # manufacturing nvs partition
 mfg_directory = 'mfg_nvs'
@@ -73,6 +75,32 @@ def at_parameter_assign_str(arg, fixed_len, l, lidx):
         arg_tmp = [x.encode() for x in l_arg]
         l[lidx : (lidx+fixed_len)] = arg_tmp[0 : fixed_len]
 
+def is_factory_firmware_size(fsize):
+    return (fsize >= min_firmware_size) and (fsize / min_firmware_size <= 16)
+
+def is_standalone_nvs_size(fsize):
+    return (fsize >= min_nvs_partition_size) and (fsize % sec_size == 0) and (fsize < min_firmware_size)
+
+def is_valid_input_size(fsize):
+    return (fsize == para_partition_size) or is_factory_firmware_size(fsize) or is_standalone_nvs_size(fsize)
+
+def is_nvs_partition(data):
+    """Return True if data looks like a standalone NVS partition (first page is valid)."""
+    if len(data) < min_nvs_partition_size or len(data) % sec_size != 0:
+        return False
+    try:
+        nvs = NVS_Partition(bytearray(data))
+    except Exception:
+        return False
+    if not nvs.pages:
+        return False
+    page = nvs.pages[0]
+    if page.header['status'] not in ('Active', 'Full'):
+        return False
+    original = page.header['crc']['original'] & 0xFFFFFFFF
+    computed = page.header['crc']['computed'] & 0xFFFFFFFF
+    return original == computed
+
 def modify_bin(esp, args):
     print(args)
 
@@ -80,7 +108,7 @@ def modify_bin(esp, args):
         ESP_LOGE('File does not exist: {}'.format(args.input))
         sys.exit(2)
     fsize = os.path.getsize(args.input)
-    if (fsize != para_partition_size) and ((fsize < min_firmware_size) or (fsize / min_firmware_size > 16)):
+    if not is_valid_input_size(fsize):
         ESP_LOGE('Invalid file size: {}'.format(fsize))
         sys.exit(2)
 
@@ -89,7 +117,9 @@ def modify_bin(esp, args):
     with open(args.input, 'rb') as fp:
         data = fp.read()
         if re.search(mfg_nvs_pattern, data):
-            return modify_param_bin_in_nvs(esp, args)
+            return modify_param_bin_in_nvs(esp, args, standalone=False)
+        elif is_nvs_partition(data):
+            return modify_param_bin_in_nvs(esp, args, standalone=True)
         else:
             return modify_param_bin_in_partition(esp, args)
 
@@ -1090,33 +1120,39 @@ def at_update_mfg_parameters(args, data):
 
     return data
 
-def modify_param_bin_in_nvs(esp, args):
+def modify_param_bin_in_nvs(esp, args, standalone=False):
     """
     A typic format of esp-at parameter binary is in nvs partition, and these parameters support to configure:
         <tpower>, <uart_x>, <schan>, <nchan>, <country code>, <uart baud>,
         <tx_pin>, <tx_pin>, <cts>, <rts>, <module name>
     """
-    print('Modify the binary firmware where the parameters are stored in manufacturing nvs...')
-    if args.parameter_offset:
-        param_addr = args.parameter_offset
+    if standalone:
+        print('Modify the standalone manufacturing nvs binary...')
+        mfg_nvs_addr = 0
+        mfg_nvs_size = os.path.getsize(args.output)
+        ESP_LOGI('standalone mfg_nvs.bin size: {}'.format(hex(mfg_nvs_size)))
     else:
-        with open(args.output, 'rb') as fp:
-            data = fp.read()
-            try:
-                param_addr = re.search(mfg_nvs_pattern, data).span()[0]
-            except Exception as e:
-                ESP_LOGE('Can not find valid entry of parameter partition, please check firmware: {}'.format(args.input))
-                sys.exit(2)
+        print('Modify the binary firmware where the parameters are stored in manufacturing nvs...')
+        if args.parameter_offset:
+            param_addr = args.parameter_offset
+        else:
+            with open(args.output, 'rb') as fp:
+                data = fp.read()
+                try:
+                    param_addr = re.search(mfg_nvs_pattern, data).span()[0]
+                except Exception as e:
+                    ESP_LOGE('Can not find valid entry of parameter partition, please check firmware: {}'.format(args.input))
+                    sys.exit(2)
 
-    # read the offset and size parameter of mfg_nvs.bin by param_addr parameter
-    with open(args.output, 'rb') as fp:
-        param_format = '<HBBII'
-        fp.seek(param_addr, 0)
-        raw_at_parameter = at_read_records(param_format, fp)
-        list_at_parameter = list(raw_at_parameter)
-        mfg_nvs_addr = list_at_parameter[3]
-        mfg_nvs_size = list_at_parameter[4]
-    ESP_LOGI('mfg_nvs.bin address: {} size: {}'.format(hex(mfg_nvs_addr), hex(mfg_nvs_size)))
+        # read the offset and size parameter of mfg_nvs.bin by param_addr parameter
+        with open(args.output, 'rb') as fp:
+            param_format = '<HBBII'
+            fp.seek(param_addr, 0)
+            raw_at_parameter = at_read_records(param_format, fp)
+            list_at_parameter = list(raw_at_parameter)
+            mfg_nvs_addr = list_at_parameter[3]
+            mfg_nvs_size = list_at_parameter[4]
+        ESP_LOGI('mfg_nvs.bin address: {} size: {}'.format(hex(mfg_nvs_addr), hex(mfg_nvs_size)))
 
     # create work directory
     if os.path.exists(mfg_directory):
@@ -1147,12 +1183,15 @@ def modify_param_bin_in_nvs(esp, args):
     # generate new mfg_nvs.bin from mfg_nvs.csv
     generate(mfg_nvs_csv, mfg_nvs_bin, mfg_nvs_size)
 
-    # re-combine target.bin with new mfg_nvs.bin
+    # re-combine target.bin with new mfg_nvs.bin (or replace standalone mfg_nvs.bin)
     with open(args.output, 'rb+') as fp, open(mfg_nvs_bin, 'rb') as fbin:
         mfg_nvs_data = fbin.read()
         fp.seek(mfg_nvs_addr, 0)
         fp.write(mfg_nvs_data)
-    ESP_LOGI('New esp-at firmware successfully generated! ----> {}'.format(os.path.abspath(args.output)))
+    if standalone:
+        ESP_LOGI('New mfg_nvs.bin successfully generated! ----> {}'.format(os.path.abspath(args.output)))
+    else:
+        ESP_LOGI('New esp-at firmware successfully generated! ----> {}'.format(os.path.abspath(args.output)))
 
     return
 
@@ -1258,7 +1297,7 @@ def main(argv=None, esp=None):
 
     parser_modify_bin = subparsers.add_parser(
         'modify_bin',
-        help='Modify the parameter configuration of esp-at factory firmware (1MB/2MB/4MB/.. size) according to the parameter configuration')
+        help='Modify the parameter configuration of esp-at factory firmware or a standalone mfg_nvs.bin')
 
     parser_generate_bin = subparsers.add_parser(
         'generate_bin',
@@ -1414,13 +1453,13 @@ def main(argv=None, esp=None):
         type=arg_auto_int)
 
     parser_modify_bin.add_argument('--input', '-in',
-        help='Input filename of AT firmware or parameter partition',
+        help='Input filename of AT factory firmware, standalone mfg_nvs.bin, or legacy parameter partition',
         metavar='filename',
         type=str,
         required=True)
 
     parser_modify_bin.add_argument('--output', '-o',
-        help='Output filename of AT firmware or parameter partition',
+        help='Output filename of AT factory firmware, standalone mfg_nvs.bin, or legacy parameter partition. Default: target.bin',
         metavar='filename',
         type=str,
         default='target.bin')

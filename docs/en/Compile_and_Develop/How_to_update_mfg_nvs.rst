@@ -16,7 +16,7 @@ mfg_nvs (:term:`manufacturing nvs`) partition is defined in ``esp-at/module_conf
   - PKI configurations (various certificate and key configurations): Please refer to :ref:`factory-pki-intro`.
   :esp32 or esp32c2 or esp32c3 or esp32c5 or esp32c6 or esp32c61: - GATTS configuration (Bluetooth LE services): Please refer to :ref:`factory-gatts-intro`.
 
-When you need to modify the factory parameter configurations, PKI configurations, or GATTS configurations, you can recompile the ESP-AT project to generate a new mfg_nvs.bin file; Alternatively, through :doc:`../Compile_and_Develop/tools_at_py` modify the firmware to generate a new firmware for your module. This article introduces the former.
+When you need to modify the factory parameter configurations, PKI configurations, or GATTS configurations, you can recompile the ESP-AT project to generate a new mfg_nvs.bin file; Alternatively, you can use :doc:`../Compile_and_Develop/tools_at_py` to modify the factory firmware or the standalone ``mfg_nvs.bin`` file. This article introduces the former.
 
 .. _mfg-nvs-generate:
 

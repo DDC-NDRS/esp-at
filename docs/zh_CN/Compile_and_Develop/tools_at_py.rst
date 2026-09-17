@@ -5,7 +5,7 @@ at.py 工具
 
 :link_to_translation:`en:[English]`
 
-``at.py`` 工具用于修改打包好的 2 MB/4 MB AT 量产固件（即 ``build/factory`` 目录下的 ``factory_XXX.bin``）中的多种参数配置。这些配置包括 Wi-Fi 配置、证书和密钥配置、UART 配置、GATTS 配置等。当默认的固件无法满足你的需求时，你可以使用 ``at.py`` 工具修改固件中的这些参数配置。
+``at.py`` 工具用于修改打包好的 2 MB/4 MB AT 量产固件（即 ``build/factory`` 目录下的 ``factory_XXX.bin``）或独立量产 NVS 镜像（即 ``build/customized_partitions`` 目录下的 ``mfg_nvs.bin``）中的多种参数配置。这些配置包括 Wi-Fi 配置、证书和密钥配置、UART 配置、GATTS 配置等。当默认的固件无法满足你的需求时，你可以使用 ``at.py`` 工具修改固件或独立 ``mfg_nvs.bin`` 文件中的这些参数配置。
 
 .. _esp-at-py-steps:
 
@@ -48,7 +48,7 @@ at.py 工具
 第三步：at.py 用法说明
 ----------------------------
 
-当前 ``at.py`` 支持修改固件中的参数配置，请在命令行中输入 ``python at.py modify_bin --help``，查看支持的用法以及说明。
+当前 ``at.py`` 支持修改固件或独立 ``mfg_nvs.bin`` 文件中的参数配置，请在命令行中输入 ``python at.py modify_bin --help``，查看支持的用法以及说明。
 
 .. _esp-at-py-modify-bin:
 
@@ -67,6 +67,7 @@ at.py 工具
   - 你可以混合修改多种参数配置，例如，你可以同时修改 Wi-Fi 配置和证书和密钥配置。
   - 待修改的参数配置，脚本并不会检查其合法性，请确保你输入的参数配置是合法的。
   - 修改后的参数配置，在当前 mfg_nvs 目录下的 ``mfg_nvs.csv`` 中，会有对应的记录。
+  - ``--input`` 既可以是完整的量产固件（``factory_XXX.bin``），也可以是独立的量产 NVS 镜像（``mfg_nvs.bin``）。当输入为 ``mfg_nvs.bin`` 时，输出同样是 NVS 镜像。默认输出文件名为 ``target.bin``，建议通过 ``--output`` 另存，以免覆盖原文件。
 
 .. _at-py-modify-wifi:
 
@@ -103,6 +104,15 @@ at.py 工具
 
 - **\--tx_power 72**：单位是 0.25 dBm，72 表示 18 dBm
 - **\--input factory_XXX.bin**：输入的固件文件
+
+你也可以用同样的参数修改独立的 ``mfg_nvs.bin`` 文件：
+
+.. code-block:: none
+
+  python at.py modify_bin --tx_power 72 --country_code "US" --start_channel 1 --channel_number 11 --input mfg_nvs.bin --output mfg_nvs_new.bin
+
+- **\--input mfg_nvs.bin**：输入的量产 NVS 镜像。
+- **\--output mfg_nvs_new.bin**：输出的量产 NVS 镜像。只需烧录 mfg_nvs 分区，详见 :doc:`How_to_update_mfg_nvs`。
 
 .. _at-py-modify-pki:
 
@@ -324,6 +334,8 @@ at.py 工具
 
   请根据 :ref:`固件烧录指南 <flash-at-firmware-into-your-device>`，完成固件烧录。
 
+  如果你修改的是独立的 ``mfg_nvs.bin`` 文件，只需烧录 mfg_nvs 分区。详见 :doc:`How_to_update_mfg_nvs`。
+
 .. only:: esp32s2
 
   .. _esp-at-firmware-download:
@@ -337,3 +349,5 @@ at.py 工具
     **请保存好修改前和修改后的固件以及下载链接**，用于后续可能的问题调试。
 
   请根据 :ref:`固件烧录指南 <flash-at-firmware-into-your-device>`，完成固件烧录。
+
+  如果你修改的是独立的 ``mfg_nvs.bin`` 文件，只需烧录 mfg_nvs 分区。详见 :doc:`How_to_update_mfg_nvs`。
