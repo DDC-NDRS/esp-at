@@ -5,7 +5,7 @@ at.py Tool
 
 :link_to_translation:`zh_CN:[中文]`
 
-The ``at.py`` tool is used to modify various parameter configurations in the packaged 2 MB/4 MB AT production firmware (namely, ``factory_XXX.bin`` in the ``build/factory`` directory). These configurations include Wi-Fi configurations, certificate and key configurations, UART configurations, GATTS configurations, and more. When the default firmware does not meet your requirements, you can use the ``at.py`` tool to modify these parameter configurations in the firmware.
+The ``at.py`` tool is used to modify various parameter configurations in the packaged 2 MB/4 MB AT production firmware (namely, ``factory_XXX.bin`` in the ``build/factory`` directory) or in the standalone manufacturing NVS image (namely, ``mfg_nvs.bin`` in the ``build/customized_partitions`` directory). These configurations include Wi-Fi configurations, certificate and key configurations, UART configurations, GATTS configurations, and more. When the default firmware does not meet your requirements, you can use the ``at.py`` tool to modify these parameter configurations in the firmware or in the standalone ``mfg_nvs.bin`` file.
 
 .. _esp-at-py-steps:
 
@@ -48,7 +48,7 @@ Visit the :project_file:`at.py <tools/at.py>` webpage, click the "Download raw f
 Step 3: Use at.py
 -----------------
 
-Currently, ``at.py`` supports modifying parameter configurations in the firmware. To view the supported usage and instructions, enter ``python at.py modify_bin --help`` in the command line for more details.
+Currently, ``at.py`` supports modifying parameter configurations in the firmware or in a standalone ``mfg_nvs.bin`` file. To view the supported usage and instructions, enter ``python at.py modify_bin --help`` in the command line for more details.
 
 .. _esp-at-py-modify-bin:
 
@@ -67,6 +67,7 @@ Step 4: Examples: Modify Firmware Configurations with at.py
   - You can modify the parameter configurations of multiple functions at one go. For example, you can modify both Wi-Fi configuration and certificate and key configuration at the same time.
   - The script does not check the validity of the modified parameter configurations. Please ensure that the input configurations are valid.
   - The modified parameter configurations will have corresponding records in the ``mfg_nvs.csv`` file under the current mfg_nvs directory.
+  - ``--input`` can be either the full factory firmware (``factory_XXX.bin``) or the standalone manufacturing NVS image (``mfg_nvs.bin``). When the input is ``mfg_nvs.bin``, the output is also an NVS image. The default output filename is ``target.bin``; it is recommended to specify ``--output`` to avoid overwriting the original file.
 
 .. _at-py-modify-wifi:
 
@@ -103,6 +104,15 @@ For example, you can use the following command to modify the maximum transmissio
 
 - **\--tx_power 72**: The unit is 0.25 dBm, and 72 represents 18 dBm.
 - **\--input factory_XXX.bin**: The input firmware file.
+
+You can also modify the same parameters in a standalone ``mfg_nvs.bin`` file:
+
+.. code-block:: none
+
+  python at.py modify_bin --tx_power 72 --country_code "US" --start_channel 1 --channel_number 11 --input mfg_nvs.bin --output mfg_nvs_new.bin
+
+- **\--input mfg_nvs.bin**: The input manufacturing NVS image.
+- **\--output mfg_nvs_new.bin**: The output manufacturing NVS image. Flash only the mfg_nvs partition. See :doc:`How_to_update_mfg_nvs`.
 
 .. _at-py-modify-pki:
 
@@ -324,6 +334,8 @@ For example, you can use the following command to modify the baud rate to 921600
 
   Please follow the :ref:`flash firmware guide <flash-at-firmware-into-your-device>` to complete it.
 
+  If you modified a standalone ``mfg_nvs.bin`` file, flash only the mfg_nvs partition. See :doc:`How_to_update_mfg_nvs`.
+
 .. only:: esp32s2
 
   .. _esp-at-firmware-download:
@@ -337,3 +349,5 @@ For example, you can use the following command to modify the baud rate to 921600
     **Please save the firmware before and after modification, and the download link**, for possible issue debugging in the future.
 
   Please follow the :ref:`flash firmware guide <flash-at-firmware-into-your-device>` to complete it.
+
+  If you modified a standalone ``mfg_nvs.bin`` file, flash only the mfg_nvs partition. See :doc:`How_to_update_mfg_nvs`.
