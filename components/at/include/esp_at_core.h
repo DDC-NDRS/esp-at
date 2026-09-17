@@ -16,6 +16,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include "sdkconfig.h"
 #include "esp_err.h"
@@ -666,6 +667,20 @@ int32_t esp_at_get_socket_by_link_id(uint8_t link_id);
 esp_at_netif_t esp_at_get_netif_by_socket(int fd);
 
 /**
+ * @brief Send data on a TCP/UDP/SSL connection identified by link ID.
+ *
+ * The connection must already have been established with AT+CIPSTART or
+ * AT+CIPSTARTEX. This helper writes payload data to the socket associated
+ * with @p link_id.
+ *
+ * @param link_id  AT connection link identifier (0-based).
+ * @param data     Payload buffer to send.
+ * @param size     Number of bytes to send.
+ * @return Number of bytes written, or a negative error code.
+ */
+int32_t esp_at_write_data_to_link_id(uint8_t link_id, const void *data, size_t size);
+
+/**
  * @brief Resolve a hostname to a single IP address with timeout control.
  *
  * @note @p hostname may also be an IPv4/IPv6 address literal string.
@@ -746,6 +761,18 @@ void esp_at_http_free_pki_if_config(esp_http_client_config_t *config);
  * @return ESP_OK on success, or an error code.
  */
 esp_err_t esp_at_http_set_header_if_config(esp_http_client_handle_t handle);
+
+/**
+ * @brief Reuse the global SNI previously set by AT+HTTPCSNI.
+ *
+ * If AT+HTTPCSNI has already configured a global SNI, call this API in a
+ * custom AT command to apply that same setting. The function assigns the
+ * stored SNI pointer to @p config (it does not copy the string). Call it
+ * before creating the HTTP client handle.
+ *
+ * @param config  HTTP client configuration to populate.
+ */
+void esp_at_http_set_sni_if_config(esp_http_client_config_t *config);
 
 /**
  * @brief Clear all request headers previously configured via AT+HTTPCHEAD.

@@ -2,58 +2,207 @@ Downloading Guide
 =================
 
 {IDF_TARGET_MODULE_NAME: default="undefined", esp32="ESP32-WROOM-32", esp32c2="ESP8684-MINI-1", esp32c3="ESP32-C3-MINI-1", esp32c5="ESP32-C5-WROOM-1", esp32c6="ESP32-C6-MINI-1", esp32c61="ESP32-C61-WROOM-1", esp32s2="ESP32-S2-MINI"}
-{IDF_TARGET_FACTORY_BIN: default="undefined", esp32="ESP32-WROOM-32-AT-V3.2.0.0", esp32c2="ESP32C2-4MB-AT-V3.3.0.0", esp32c3="ESP32-C3-MINI-1-AT-V3.3.0.0", esp32c5="ESP32C5-4MB-AT-V5.0.0.0", esp32c6="ESP32C6-4MB-AT-V4.0.0.0", esp32c61="ESP32C61-4MB-AT-V4.0.0.0", esp32s2="ESP32-S2-MINI-AT-V3.4.0.0"}
+{IDF_TARGET_FACTORY_FILE: default="factory/factory_XXX.bin", esp32="factory/factory_WROOM-32.bin", esp32c2="factory/factory_ESP32C2-4MB.bin", esp32c3="factory/factory_MINI-1.bin", esp32c5="factory/factory_ESP32C5-4MB.bin", esp32c6="factory/factory_ESP32C6-4MB.bin", esp32c61="factory/factory_ESP32C61-4MB.bin", esp32s2="factory/factory_MINI-1.bin"}
+{IDF_TARGET_FACTORY_FILE_UNFILLED: default="factory/factory_XXX_unfilled.bin", esp32="factory/factory_WROOM-32_unfilled.bin", esp32c2="factory/factory_ESP32C2-4MB_unfilled.bin", esp32c3="factory/factory_MINI-1_unfilled.bin", esp32c5="factory/factory_ESP32C5-4MB_unfilled.bin", esp32c6="factory/factory_ESP32C6-4MB_unfilled.bin", esp32c61="factory/factory_ESP32C61-4MB_unfilled.bin", esp32s2="factory/factory_MINI-1_unfilled.bin"}
 
 :link_to_translation:`zh_CN:[中文]`
 
-This Guide demonstrates how to download AT firmware and flash it into an {IDF_TARGET_MODULE_NAME} device by taking {IDF_TARGET_MODULE_NAME} as an example. The Guide is also applicable to other {IDF_TARGET_NAME} modules.
+This guide takes {IDF_TARGET_MODULE_NAME} as an example to describe how to download AT firmware and flash it into the module. The same steps apply to other {IDF_TARGET_NAME} modules.
 
-Before you start, please make sure you have already connected your hardware. For more details, see :doc:`Hardware_connection`.
+Before downloading and flashing AT firmware, ensure that the hardware is connected correctly. See :doc:`Hardware_connection`.
 
-For different series of modules, the commands supported by AT firmware are different. Please refer to :doc:`/Compile_and_Develop/esp-at_firmware_differences` for more details.
+The AT commands supported by the default firmware differ across module series. See :doc:`/Compile_and_Develop/esp-at_firmware_differences`.
+
+Follow the steps below to download, flash, and verify the AT firmware.
+
+* :ref:`download-at-firmware`
+* :ref:`flash-at-firmware-into-your-device`
+
+  * :ref:`flash-factory-bin`
+
+    * :ref:`flash-factory-windows`
+    * :ref:`flash-factory-linux`
+
+  * :ref:`flash-multiple-bins`
+
+    * :ref:`flash-multiple-windows`
+    * :ref:`flash-multiple-linux`
+
+* :ref:`check-whether-at-works`
 
 .. _download-at-firmware:
 
-Download AT Firmware
----------------------
+Step 1. Download AT Firmware
+----------------------------
 
-To download AT firmware to your computer, please do as follows:
+Go to :doc:`{IDF_TARGET_NAME} Released Firmware <../AT_Binary_Lists/esp_at_binaries>`, download the firmware for your module, and extract the package.
 
-- Navigate to :doc:`../AT_Binary_Lists/index`
-- Find the firmware for your device
-- Click the link to download it
+.. only:: esp32
 
-Here, we download ``{IDF_TARGET_FACTORY_BIN}`` for {IDF_TARGET_MODULE_NAME}. The list below describes the structure of this firmware and what each bin file contains. Other AT firmware has similar structure and bin files.
+   See :ref:`firmware-esp32-wroom-32-series` for {IDF_TARGET_MODULE_NAME} firmware.
 
+.. only:: esp32c2
+
+   See :ref:`firmware-esp32c2-4mb-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+.. only:: esp32c3
+
+   See :ref:`firmware-esp32c3-mini-1-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+.. only:: esp32c5
+
+   See :ref:`firmware-esp32c5-4mb-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+.. only:: esp32c6
+
+   See :ref:`firmware-esp32c6-4mb-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+.. only:: esp32c61
+
+   See :ref:`firmware-esp32c61-4mb-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+.. only:: esp32s2
+
+   See :ref:`firmware-esp32s2-mini-series` for {IDF_TARGET_MODULE_NAME} firmware.
+
+The ``factory`` directory contains two combined factory bins. Either can be flashed to address ``0x0``:
+
+- ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` (recommended): a single bin with all required functions, and the smallest and fastest to flash. Provided in newly released firmware packages. Necessary unused regions are filled with ``0xFF`` up to the end of the AT application firmware ``esp-at.bin`` in the ``ota_0`` partition. If the package does not include this file, use ``{IDF_TARGET_FACTORY_FILE}``.
+- ``{IDF_TARGET_FACTORY_FILE}``: a single bin with all required functions, but larger and slower to flash. The earlier fill method, still included in new firmware packages. Filling extends through the end of the last partition ``ota_1``. The file size is typically 2 MB or 4 MB.
+
+For other files in the package, see :ref:`firmware-package-contents`.
+
+.. _flash-at-firmware-into-your-device:
+
+Step 2. Flash AT Firmware into Your Device
+------------------------------------------
+
+Choose a flashing method according to your use case.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 38 40
+
+   * - Method
+     - Recommended scenario
+     - Notes
+   * - :ref:`Method 1 <flash-factory-bin>`
+     - First-time flashing or factory production
+     - Flash one factory bin to ``0x0``. ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` is recommended.
+   * - :ref:`Method 2 <flash-multiple-bins>`
+     - Updating selected partitions or secondary development
+     - Flash multiple bins to the addresses specified in ``download.config``.
+
+.. _flash-factory-bin:
+
+Flash the Factory Bin (Recommended)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Flash ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` (recommended) or ``{IDF_TARGET_FACTORY_FILE}`` to address ``0x0``.
+
+.. _flash-factory-windows:
+
+Windows
+~~~~~~~
+
+Download `Flash Download Tool <https://dl.espressif.com/public/flash_download_tool.zip>`_ for Windows. See the `Flash Download Tool User Guide <https://docs.espressif.com/projects/esp-test-tools/en/latest/{IDF_TARGET_PATH_NAME}/production_stage/tools/flash_download_tool.html>`_ for details. Confirm the COM port number of the download interface, and select it from the "COM:" dropdown list. To identify the port, see `Check port on Windows <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-windows>`_.
+
+- Open Flash Download Tool.
+- Select chipType. (Here, select ``{IDF_TARGET_NAME}``.)
+- Select a workMode. (Here, select ``Developer Mode``.)
+- Select a loadMode. (Here, select ``uart``.)
+
+   .. figure:: ../../_static/get_started/download_guide/download_tool_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :alt: Firmware Download Configurations
+      :figclass: align-center
+
+      Firmware Download Configurations
+
+- Select ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` (recommended) or ``{IDF_TARGET_FACTORY_FILE}``, and set the address to ``0x0``.
+- Select "DoNotChgBin" to use the flash parameters in the factory bin.
+- Select the correct COM port and start flashing.
+
+   .. figure:: ../../_static/get_started/download_guide/download_one_bin_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :scale: 70%
+      :alt: Download to One Address
+
+      Download to One Address (click to enlarge)
+
+When you finish flashing, :ref:`check whether AT works <check-whether-at-works>`.
+
+.. _flash-factory-linux:
+
+Linux or macOS
+~~~~~~~~~~~~~~
+
+Install `esptool <https://github.com/espressif/esptool>`_:
 
 .. code-block:: none
 
-   .
-   ├── at_customize.bin                 // secondary partition table
-   ├── bootloader                       // bootloader
-   │   └── bootloader.bin
-   ├── customized_partitions            // AT customized binaries
-         ├── mfg_nvs.csv                  // raw data of manufacturing nvs partition
-   │   └── mfg_nvs.bin                  // manufacturing nvs partition binary
-   ├── download.config                  // configuration of downloading
-   ├── esp-at.bin                       // AT application binary
-   ├── esp-at.elf
-   ├── esp-at.map
-   ├── factory                          // A combined bin for factory downloading
-   │   └── factory_XXX.bin
-   ├── flasher_args.json                // flasher arguments
-   ├── ota_data_initial.bin             // ota data parameters
-   ├── partition_table                  // primary partition table
-   │   └── partition-table.bin
-   └── sdkconfig                        // compilation configuration for AT firmware
+   pip install esptool
 
-The file ``download.config`` contains the configuration to flash the firmware into multiple addresses:
+Replace the port name in the following command with the download interface of the board, and run the command in the extracted firmware directory. If you do not know the interface name, see `Check port on Linux and macOS <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-linux-and-macos>`_. ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` is recommended.
 
 .. only:: esp32
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 40m --flash_size 4MB
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x0 factory/factory_WROOM-32_unfilled.bin
+
+.. only:: esp32c2
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 60m --flash-size 4MB 0x0 factory/factory_ESP32C2-4MB_unfilled.bin
+
+.. only:: esp32c3
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x0 factory/factory_MINI-1_unfilled.bin
+
+.. only:: esp32c5
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C5-4MB_unfilled.bin
+
+.. only:: esp32c6
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C6-4MB_unfilled.bin
+
+.. only:: esp32c61
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C61-4MB_unfilled.bin
+
+.. only:: esp32s2
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_MINI-1_unfilled.bin
+
+When you finish flashing, :ref:`check whether AT works <check-whether-at-works>`.
+
+.. _flash-multiple-bins:
+
+Flash Multiple Bins According to download.config
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use this method to update selected partitions or for secondary development. Configure the download address of each bin and the flash parameters according to ``download.config``.
+
+The ``download.config`` file of the {IDF_TARGET_MODULE_NAME} firmware is shown below:
+
+.. only:: esp32
+
+   .. code-block:: none
+
+      --flash-mode dio --flash-freq 40m --flash-size 4MB
       0x1000 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0x10000 ota_data_initial.bin
@@ -65,7 +214,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 60m --flash_size 4MB
+      --flash-mode dio --flash-freq 60m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -77,7 +226,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 40m --flash_size 4MB
+      --flash-mode dio --flash-freq 40m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -89,7 +238,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x2000 bootloader/bootloader.bin
       0xc000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -101,7 +250,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -113,7 +262,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0xc000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -125,7 +274,7 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x1000 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0x10000 ota_data_initial.bin
@@ -135,196 +284,117 @@ The file ``download.config`` contains the configuration to flash the firmware in
 
 .. list::
 
-   - ``--flash_mode dio`` means the firmware is compiled with flash DIO mode.
-   :esp32 or esp32c3: - ``--flash_freq 40m`` means the firmware's flash frequency is 40 MHz.
-   :esp32c2: - ``--flash_freq 60m`` means the firmware's flash frequency is 60 MHz.
-   :esp32c5 or esp32c6 or esp32c61 or esp32s2: - ``--flash_freq 80m`` means the firmware's flash frequency is 80 MHz.
-   - ``--flash_size 4MB`` means the firmware is using flash size 4 MB.
+   - ``--flash-mode dio`` means the firmware is compiled with flash DIO mode.
+   :esp32 or esp32c3: - ``--flash-freq 40m`` means the firmware's flash frequency is 40 MHz.
+   :esp32c2: - ``--flash-freq 60m`` means the firmware's flash frequency is 60 MHz.
+   :esp32c5 or esp32c6 or esp32c61 or esp32s2: - ``--flash-freq 80m`` means the firmware's flash frequency is 80 MHz.
+   - ``--flash-size 4MB`` means the firmware requires a flash of at least 4 MB.
    :esp32 or esp32s2: - ``0x10000 ota_data_initial.bin`` means downloading ``ota_data_initial.bin`` into the address ``0x10000``.
    :esp32c2 or esp32c3 or esp32c5 or esp32c6 or esp32c61: - ``0xd000 ota_data_initial.bin`` means downloading ``ota_data_initial.bin`` into the address ``0xd000``.
 
-.. _flash-at-firmware-into-your-device:
-
-Flash AT Firmware into Your Device
------------------------------------
-
-Follow the instructions below for your operating system.
+.. _flash-multiple-windows:
 
 Windows
-^^^^^^^^
+~~~~~~~
 
-Before starting to flash, you need to download `Flash Download Tool <https://dl.espressif.com/public/flash_download_tool.zip>`_ for Windows. You can refer to the `Flash Download Tool User Guide <https://docs.espressif.com/projects/esp-test-tools/en/latest/{IDF_TARGET_PATH_NAME}/production_stage/tools/flash_download_tool.html>`_ for instructions.
+The tool configuration is the same as in :ref:`flash-factory-bin` for Windows, with the following differences:
 
-- Open the {IDF_TARGET_NAME} Flash Download Tool.
-- Select chipType. (Here, we select ``{IDF_TARGET_NAME}``.)
-- Select a workMode according to your need. (Here, we select ``Developer Mode``.)
-- Select a loadMode according to your need. (Here, we select ``uart``.)
+- Configure each bin and its address according to ``download.config``.
+- Do **not** select "DoNotChgBin". Set SPI SPEED and SPI MODE to match ``download.config``.
 
-.. figure:: ../../_static/get_started/download_guide/download_tool_{IDF_TARGET_PATH_NAME}.png
-   :align: center
-   :alt: Firmware Download Configurations
-   :figclass: align-center
+   .. figure:: ../../_static/get_started/download_guide/download_multi_bin_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :scale: 60%
+      :alt: Download to Multiple Addresses
 
-   Firmware Download Configurations
+      Download to Multiple Addresses (click to enlarge)
 
-- Flash AT firmware into your device. You can select either of the two ways below.
+When you finish flashing, :ref:`check whether AT works <check-whether-at-works>`.
 
-   - To download one combined factory bin (namely, ``factory_XXX.bin`` in the ``build/factory`` directory) to address ``0x0``, select "DoNotChgBin" to use the default configuration of the factory bin.
-
-     .. figure:: ../../_static/get_started/download_guide/download_one_bin_{IDF_TARGET_PATH_NAME}.png
-        :align: center
-        :scale: 70%
-        :alt: Download to One Address
-
-        Download to One Address (click to enlarge)
-
-   - To download multiple bins separately to different addresses, set up the configurations according to the file ``download.config`` and do NOT select "DoNotChgBin".
-
-     .. figure:: ../../_static/get_started/download_guide/download_multi_bin_{IDF_TARGET_PATH_NAME}.png
-        :align: center
-        :scale: 60%
-        :alt: Download to Multiple Addresses
-
-        Download to Multiple Addresses (click to enlarge)
-
-In case of flashing issues, please verify what the COM port number of download interface of the {IDF_TARGET_NAME} board is and select it from "COM:" dropdown list. If you do not know the port number, you can refer to `Check port on Windows <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-windows>`_ for details.
-
-When you finish flashing, please `Check Whether AT Works`_.
+.. _flash-multiple-linux:
 
 Linux or macOS
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
-Before you start to flash, you need to install `esptool.py <https://github.com/espressif/esptool>`_.
+Replace ``PORTNAME`` with the download interface of the board, replace ``download.config`` with the parameters in that file, and run the command in the extracted firmware directory. If you do not know the interface name, see `Check port on Linux and macOS <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-linux-and-macos>`_.
 
-You can select either of the two ways below to flash AT firmware into your device.
+.. code-block:: none
 
-- To download the bins separately into multiple addresses, enter the following command and replace ``PORTNAME`` and ``download.config``:
+    esptool --chip auto --port PORTNAME --baud 115200 --before default-reset --after hard-reset write-flash -z download.config
 
-  .. code-block:: none
+Below is the example command for {IDF_TARGET_MODULE_NAME}.
 
-       esptool.py --chip auto --port PORTNAME --baud 115200 --before default_reset --after hard_reset write_flash -z download.config
+.. only:: esp32
 
-  Replace ``PORTNAME`` with your port name. If you do not know it, you can refer to `Check port on Linux and macOS <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-linux-and-macos>`_ for details.
+   .. code-block:: none
 
-  Replace ``download.config`` with the content inside the file.
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
 
-  Below is the example command for {IDF_TARGET_MODULE_NAME}.
+.. only:: esp32c2
 
-   .. only:: esp32
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 60m --flash-size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c3
 
-   .. only:: esp32c2
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 60m --flash_size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c5
 
-   .. only:: esp32c3
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x2000 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c6
 
-   .. only:: esp32c5
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x2000 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c61
 
-   .. only:: esp32c6
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32s2
 
-   .. only:: esp32c61
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
-
-   .. only:: esp32s2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
-
-- To download the bins together to one address, enter the following command and replace ``PORTNAME`` and ``FILEDIRECTORY``:
-
-  .. code-block:: none
-
-     esptool.py --chip auto --port PORTNAME --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 FILEDIRECTORY
-
-  Replace ``PORTNAME`` with your port name. If you do not know it, you can refer to `Check port on Linux and macOS <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#check-port-on-linux-and-macos>`_ for details.
-
-  Replace ``FILEDIRECTORY`` with the file directory you would flash to the address ``0x0``. It is normally factory/XXX.bin.
-
-  Below is the example command for {IDF_TARGET_MODULE_NAME}.
-
-   .. only:: esp32
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 factory/factory_WROOM-32.bin
-
-   .. only:: esp32c2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 60m --flash_size 4MB 0x0 factory/factory_ESP32C2-4MB.bin
-
-   .. only:: esp32c3
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 factory/factory_MINI-1.bin
-
-   .. only:: esp32c5
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C5-4MB.bin
-
-   .. only:: esp32c6
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C6-4MB.bin
-
-   .. only:: esp32c61
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C61-4MB.bin
-
-   .. only:: esp32s2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_MINI-1.bin
-
-When you finish flashing, please `Check Whether AT Works`_.
+When you finish flashing, :ref:`check whether AT works <check-whether-at-works>`.
 
 .. _check-whether-at-works:
 
-Check Whether AT Works
------------------------
+Step 3. Check Whether AT Works
+------------------------------
 
-To check whether AT works, do as follows:
+Open a serial port tool, such as SecureCRT. Connect to the port attached to the "AT command/response" line (see :doc:`Hardware_connection`) with the following settings:
 
-- Open a serial port tool, such as SecureCRT;
-- Select the Port attached to "AT command/response" line (see :doc:`Hardware_connection` for details);
-- Set Baudrate to 115200;
-- Set Data Bits to 8;
-- Set Parity to None;
-- Set Stop Bits to 1;
-- Set Flow Type to None;
-- Enter the command "AT+GMR" with a new line (CR LF).
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
 
-If the response is OK as shown below, AT works.
+   * - Parameter
+     - Value
+   * - Baudrate
+     - 115200
+   * - Data Bits
+     - 8
+   * - Parity
+     - None
+   * - Stop Bits
+     - 1
+   * - Flow Type
+     - None
+   * - New line
+     - CR LF
+
+Enter the command ``AT+GMR`` with a new line. If the response is ``OK`` as shown below, AT works.
 
 .. only:: esp32c2
 
@@ -410,29 +480,14 @@ If the response is OK as shown below, AT works.
 
       OK
 
-Otherwise, you need to check your {IDF_TARGET_NAME} startup log in one of the following ways:
+If there is no ``OK`` response, check the {IDF_TARGET_NAME} startup log to confirm that the firmware initialized correctly.
 
-**Method 1:**
+- Open a serial port tool and select the port attached to the "Download/Log output" line. See :doc:`Hardware_connection`.
+- Set Baudrate to 115200, Data Bits to 8, Parity to None, Stop Bits to 1, and Flow Type to None.
+- Press the RST key of the board. If the log is similar to the reference log below, ESP-AT firmware has been initialized correctly.
 
-- Open a serial port tool, such as SecureCRT;
-- Select the port attached to the "Download/Log output" line. For more information on this line, see :doc:`Hardware_connection`.
-- Set Baudrate to 115200;
-- Set Data Bits to 8;
-- Set Parity to None;
-- Set Stop Bits to 1;
-- Set Flow Type to None;
-- Press the RST key of the board directly. If it is like the log below, it means that ESP-AT firmware have been initialized correctly.
-
-**Method 2:**
-
-- Open two serial port tools, such as SecureCRT;
-- In one serial port tool, select the port attached to the "AT command/response" line. In the other tool, select the port attached to the "Download/Log output" line. For more information on these lines, see :doc:`Hardware_connection`.
-- Set Baudrate to 115200;
-- Set Data Bits to 8;
-- Set Parity to None;
-- Set Stop Bits to 1;
-- Set Flow Type to None;
-- Enter the command :ref:`AT+RST <cmd-RST>` with a new line (CR LF) to the "AT command/response" line. If the serial log from the "Download/Output log" line is like the log below, it means that ESP-AT firmware have been initialized correctly.
+Reference Log
+^^^^^^^^^^^^^
 
 .. only:: esp32
 
@@ -583,41 +638,42 @@ Otherwise, you need to check your {IDF_TARGET_NAME} startup log in one of the fo
       Build:Jan 21 2025
       rst:0x1 (POWERON),boot:0x58 (SPI_FAST_FLASH_BOOT)
       SPI mode:DIO, clock div:1
-      load:0x408556b0,len:0x1710
-      load:0x4084bba0,len:0xd7c
-      load:0x4084e5a0,len:0x31bc
+      load:0x40855720,len:0x1b1c
+      load:0x4084bba0,len:0xdb8
+      load:0x4084e5a0,len:0x31f8
+      load:0x4085a000,len:0x222c
       entry 0x4084bbaa
-      I (23) boot: ESP-IDF v5.5-beta1-695-ga3ca8669f24-dir 2nd stage bootloader
-      I (24) boot: compile time Aug 25 2025 15:10:14
-      I (24) boot: chip revision: v1.0
-      I (26) boot: efuse block revision: v0.2
-      I (29) boot.esp32c5: SPI Speed      : 80MHz
-      I (33) boot.esp32c5: SPI Mode       : DIO
-      I (37) boot.esp32c5: SPI Flash Size : 4MB
-      I (41) boot: Enabling RNG early entropy source...
-      I (45) boot: Partition Table:
-      I (48) boot: ## Label            Usage          Type ST Offset   Length
-      I (54) boot:  0 otadata          OTA data         01 00 0000d000 00002000
-      I (60) boot:  1 phy_init         RF data          01 01 0000f000 00001000
-      I (67) boot:  2 nvs              WiFi data        01 02 00010000 0000e000
-      I (73) boot:  3 at_customize     unknown          40 00 0001e000 00042000
-      I (80) boot:  4 ota_0            OTA app          00 10 00060000 001d0000
-      I (86) boot:  5 ota_1            OTA app          00 11 00230000 001d0000
-      I (93) boot: End of partition table
-      I (97) esp_image: segment 0: paddr=00060020 vaddr=42170020 size=2c954h (182612) map
-      I (136) esp_image: segment 1: paddr=0008c97c vaddr=40800000 size=0369ch ( 13980) load
-      I (139) esp_image: segment 2: paddr=00090020 vaddr=42000020 size=16d640h (1496640) map
-      I (396) esp_image: segment 3: paddr=001fd668 vaddr=4080369c size=196d0h (104144) load
-      I (417) esp_image: segment 4: paddr=00216d40 vaddr=4081cd80 size=04998h ( 18840) load
-      I (421) esp_image: segment 5: paddr=0021b6e0 vaddr=50000000 size=000a4h (   164) load
-      I (428) boot: Loaded app from partition at offset 0x60000
-      I (429) boot: Disabling RNG early entropy source...
-      I (927) at-init: at param mode: 1
-      I (1554) at-uart: AT cmd port:uart1 tx:23 rx:24 cts:25 rts:26 baudrate:115200
-      I (1555) at-init: module_name: ESP32C5-4MB
-      I (1557) at-init: max tx power=78, ret=0
-      I (1560) at-init: v5.0.0.0 (gitlab)
-      I (2752) at-wifi: negotiated phy mode: 4
+      I (26) boot: ESP-IDF v5.5.1-833-gcc569cbd80-dirty 2nd stage bootloader
+      I (26) boot: compile time Nov 25 2025 03:43:46
+      I (27) boot: chip revision: v1.0
+      I (28) boot: efuse block revision: v0.2
+      I (31) boot.esp32c5: SPI Speed      : 80MHz
+      I (35) boot.esp32c5: SPI Mode       : DIO
+      I (39) boot.esp32c5: SPI Flash Size : 4MB
+      I (43) boot: Enabling RNG early entropy source...
+      I (47) boot: Partition Table:
+      I (50) boot: ## Label            Usage          Type ST Offset   Length
+      I (56) boot:  0 otadata          OTA data         01 00 0000d000 00002000
+      I (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+      I (69) boot:  2 nvs              WiFi data        01 02 00010000 00020000
+      I (76) boot:  3 at_customize     unknown          40 00 00030000 00070000
+      I (82) boot:  4 ota_0            OTA app          00 10 000a0000 00220000
+      I (89) boot:  5 ota_1            OTA app          00 11 002c0000 00140000
+      I (95) boot: End of partition table
+      I (99) esp_image: segment 0: paddr=000a0020 vaddr=42170020 size=2c724h (182052) map
+      I (138) esp_image: segment 1: paddr=000cc74c vaddr=40800000 size=038cch ( 14540) load
+      I (142) esp_image: segment 2: paddr=000d0020 vaddr=42000020 size=16d084h (1495172) map
+      I (403) esp_image: segment 3: paddr=0023d0ac vaddr=408038cc size=19ff8h (106488) load
+      I (425) esp_image: segment 4: paddr=002570ac vaddr=4081d900 size=049b4h ( 18868) load
+      I (429) esp_image: segment 5: paddr=0025ba68 vaddr=50000000 size=000a4h (   164) load
+      I (437) boot: Loaded app from partition at offset 0xa0000
+      I (437) boot: Disabling RNG early entropy source...
+      I (948) at-init: at param mode: 1
+      I (1605) at-uart: AT cmd port:uart1 tx:23 rx:24 cts:25 rts:26 baudrate:115200
+      I (1607) at-init: module_name: ESP32C5-4MB
+      I (1608) at-init: max tx power=78, ret=0
+      I (1611) at-init: v5.0.0.0 (gitlab)
+
 
 .. only:: esp32c6
 
@@ -757,3 +813,32 @@ Otherwise, you need to check your {IDF_TARGET_NAME} startup log in one of the fo
       module_name: MINI
       max tx power=78, ret=0
       v3.4.0.0-dev
+
+.. _firmware-package-contents:
+
+Appendix: Firmware Package Contents
+-----------------------------------
+
+The extracted AT firmware package has the following structure (see also :ref:`brief-intro-firmware`):
+
+.. code-block:: none
+
+   .
+   ├── at_customize.bin                 // secondary partition table
+   ├── bootloader                       // bootloader
+   │   └── bootloader.bin
+   ├── customized_partitions            // AT customized binaries
+   │   ├── mfg_nvs.csv                  // raw data of manufacturing nvs partition
+   │   └── mfg_nvs.bin                  // manufacturing nvs partition binary
+   ├── download.config                  // configuration of downloading
+   ├── esp-at.bin                       // AT application binary
+   ├── esp-at.elf
+   ├── esp-at.map
+   ├── factory                          // Combined bins for factory downloading
+   │   ├── factory_XXX.bin              // Combined factory bin filled through the end of ota_1
+   │   └── factory_XXX_unfilled.bin     // Combined factory bin filled through the end of the AT application (recommended)
+   ├── flasher_args.json                // flasher arguments
+   ├── ota_data_initial.bin             // ota data parameters
+   ├── partition_table                  // primary partition table
+   │   └── partition-table.bin
+   └── sdkconfig                        // compilation configuration for AT firmware

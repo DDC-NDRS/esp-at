@@ -14,6 +14,7 @@ HTTP AT 命令集
 - :ref:`AT+HTTPURLCFG <cmd-HTTPURLCFG>`：设置/获取长的 HTTP URL
 - :ref:`AT+HTTPCHEAD <cmd-HTTPCHEAD>`：设置/查询 HTTP 请求头
 - :ref:`AT+HTTPCFG <cmd-HTTPCFG>`：设置 HTTP 客户端配置
+- :ref:`AT+HTTPCSNI <cmd-HTTPCSNI>`：查询/设置 HTTP 服务器名称指示 (SNI)
 - :ref:`HTTP AT 错误码 <cmd-HTTPErrCode>`
 
 .. _cmd-http-intro:
@@ -85,6 +86,7 @@ HTTP AT 命令集
 - 该命令不支持 URL 重定向，在获取到服务器返回的状态码 301（永久性重定向）或者 302（临时性重定向）后不会自动跳转到新的 URL 地址。你可以使用某些工具获取要访问的实际 URL，然后通过该命令访问它。
 - 如果包含 ``<"data">`` 参数的整条命令的长度超过了 256 字节，请使用 :ref:`AT+HTTPCPOST <cmd-HTTPCPOST>` 命令。
 - 要设置更多的 HTTP 请求头，请使用 :ref:`AT+HTTPCHEAD <cmd-HTTPCHEAD>` 命令。
+- 有些 HTTPS 服务器在 TLS 握手时要求客户端发送 SNI 扩展字段。请在发送 HTTP 请求前使用 :ref:`AT+HTTPCSNI <cmd-HTTPCSNI>` 配置 SNI。通常情况下，SNI 的值为服务器的域名。
 
 示例
 ^^^^
@@ -455,18 +457,103 @@ HTTP AT 命令集
 - 如果你想使用自己的证书，运行时请使用 :ref:`AT+SYSMFG <cmd-SYSMFG>` 命令更新 HTTP 证书（具体步骤请参考 :ref:`AT+SYSMFG 命令示例 <sysmfg-pki>`，证书配置方法与 SSL 证书相同）。如果你想预烧录自己的证书，请参考 :doc:`../Compile_and_Develop/How_to_update_pki_config`。
 - 如果 ``<auth_mode>`` 配置为 2 或者 3，为了校验服务器的证书有效期，请在发送其它 HTTP 命令前确保 {IDF_TARGET_NAME} 已获取到当前时间（你可以发送 :ref:`AT+CIPSNTPCFG <cmd-SNTPCFG>` 命令来配置 SNTP，获取当前时间，发送 :ref:`AT+CIPSNTPTIME? <cmd-SNTPT>` 命令查询当前时间）。
 
+.. _cmd-HTTPCSNI:
+
+:ref:`AT+HTTPCSNI <HTTP-AT>`：查询/设置 HTTP 服务器名称指示 (SNI)
+-----------------------------------------------------------------
+
+查询命令
+^^^^^^^^
+
+**功能：**
+
+查询 HTTP SNI 配置。
+
+**命令：**
+
+::
+
+    AT+HTTPCSNI?
+
+**响应：**
+
+::
+
+    +HTTPCSNI:<"sni">
+    OK
+
+设置命令
+^^^^^^^^
+
+**功能：**
+
+设置 HTTP SNI。
+
+**命令：**
+
+::
+
+    AT+HTTPCSNI=<"sni">
+
+**响应：**
+
+::
+
+    OK
+
+参数
+^^^^
+
+- **<"sni">**：ClientHello 里的 SNI。通常为 HTTPS 服务器的域名。
+
+说明
+^^^^
+
+- 本命令配置是全局性的，一旦设置，所有 HTTP 命令都会共用该 SNI。
+- 如需立即生效，请在发送 HTTPS 请求前运行本命令。
+- 有些 HTTPS 服务器要求客户端支持 SNI 扩展字段。如果未设置 SNI，TLS 握手可能会失败。
+
+示例
+^^^^
+
+::
+
+    AT+HTTPCSNI="httpbin.org"
+    AT+HTTPCGET="https://httpbin.org/get"
+
 .. _cmd-HTTPErrCode:
 
 :ref:`HTTP AT 错误码 <HTTP-AT>`
 -------------------------------------
 
-启用 :ref:`AT+SYSLOG=1 <cmd-SYSLOG>` 后，HTTP 客户端请求失败时，AT 会返回错误码。错误码的格式为：
+启用 :ref:`AT+SYSLOG=1 <cmd-SYSLOG>` 后，HTTP 客户端请求失败时，AT 会输出错误信息。
+
++HTTPERR
+^^^^^^^^
+
+HTTP 客户端请求失败时，AT 一般会输出：
+
+::
+
+  +HTTPERR:<http_err>,<tls_err>,<cert_flags>,<sock_errno>
+
+参数：
+
+- **<http_err>**：HTTP/TLS 协议栈错误码，通常定义在 `esp_err.h <https://github.com/espressif/esp-idf/blob/master/components/esp_common/include/esp_err.h>`_ 和 `esp_tls_errors.h <https://github.com/espressif/esp-idf/blob/master/components/esp-tls/esp_tls_errors.h>`_ 中。``0`` 表示该层无错误。
+- **<tls_err>**：TLS 错误码，通常定义在 `mbedtls/ssl.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/ssl.h>`_ 中。``0`` 表示无 TLS 错误。
+- **<cert_flags>**：证书校验标志，通常定义在 `mbedtls/x509.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/x509.h>`_ 中。``0`` 表示校验成功或未执行校验。
+- **<sock_errno>**：套接字 errno，通常定义在 `errno.h <https://github.com/espressif/esp-lwip/blob/2.2.0-esp/src/include/lwip/errno.h>`_ 中。``0`` 表示无套接字错误。
+
+ERR CODE
+^^^^^^^^
+
+HTTP 连接建立完成后，若 HTTP 服务器返回错误，AT 一般会输出：
 
 ::
 
   ERR CODE:0x010a7xxx
 
-其中 ``01`` 是模块标识符， ``0a`` 是模块执行 AT 命令的响应结果， ``7xxx`` 表示 HTTP 错误码。如果 ``xxx`` 在 HTTP 标准状态码范围内，则表示标准 HTTP 状态码；否则表示 AT HTTP 内部的错误码。下表列出了部分 HTTP 状态码信息，更多详情请参考 `RFC 2616 <https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1>`_）。
+其中 ``01`` 是模块标识符，``0a`` 表示命令执行失败，``7xxx`` 为 HTTP 错误码。若 ``xxx`` 属于 HTTP 标准状态码，则为服务器返回的状态码；否则为 AT HTTP 内部错误码。下表列出部分 HTTP 错误码，更多状态码请参考 `RFC 2616 <https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1>`_。
 
 .. list-table::
   :header-rows: 1

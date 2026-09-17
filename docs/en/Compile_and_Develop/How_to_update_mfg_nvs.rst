@@ -41,13 +41,13 @@ You can download the mfg_nvs.bin in one of the following ways.
 
   - Linux or macOS
 
-    Please use `esptool.py <https://github.com/espressif/esptool>`_.
+    Please use `esptool <https://github.com/espressif/esptool>`_.
 
     You can execute the following command in the ESP-AT root directory to download the mfg_nvs.bin file.
 
     .. code-block:: none
 
-        esptool.py --chip auto --port PORTNAME --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB ADDRESS mfg_nvs.bin
+        esptool --chip auto --port PORTNAME --baud 921600 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB ADDRESS mfg_nvs.bin
 
     Replace ``PORTNAME`` with your serial port name. Replace ``ADDRESS`` with the address for downloading the mfg_nvs.bin file. You can use the :ref:`AT+SYSFLASH? <cmd-SYSFLASH>` command to query the download address.
 

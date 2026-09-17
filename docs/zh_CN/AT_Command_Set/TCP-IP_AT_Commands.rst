@@ -544,6 +544,7 @@ TCP/IP AT 命令
 - 确保第一个 ``+`` 字符前至少有 20 ms 时间间隔内没有其他输入，第三个 ``+`` 字符后至少有 20 ms 时间间隔内没有其他输入，三个 ``+`` 字符之间至多有 20 ms 时间间隔内没有其他输入。否则，``+`` 字符会被当做普通数据发送出去
 - 本条特殊执行命令没有命令回复
 - 请至少间隔 1 秒再发下一条 AT 命令
+- 退出 Network :term:`透传模式` 时，如果当前正在重传 TCP 数据，且服务器一直不回复时，AT 需要等重传结束后才会响应后续 AT 命令（最大超时约为 90 秒）。在此期间发送 AT 命令会提示 ``busy p...``。为避免长时间等待，请在进入透传模式前通过 :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` 设置 TCP 发送超时（``<so_sndtimeo>``），从而提前结束 TCP 数据重传
 
 .. _cmd-SEND:
 
@@ -633,6 +634,7 @@ TCP/IP AT 命令
 说明
 """"""
 
+- 本命令需在连接建立完成（收到 ``CONNECT`` 消息）后再使用。
 - 你可以使用 :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` 命令来为每个 TCP 连接配置套接字选项。例如：设置 <so_sndtimeo> 为 5000，则 TCP 发送操作会在 5 秒内返回结果，无论成功还是失败。这可以节省 MCU 等待 AT 命令回复的时间。
 
 .. _cmd-SENDL:
@@ -709,6 +711,7 @@ TCP/IP AT 命令
 说明
 """"""
 
+- 本命令需在连接建立完成（收到 ``CONNECT`` 消息）后再使用。
 - 建议你使用 UART 流控。否则，如果 UART 接收速度大于网络发送速度时，将会导致数据丢失。
 - 你可以使用 :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` 命令来为每个 TCP 连接配置套接字选项。例如：设置 <so_sndtimeo> 为 5000，则 TCP 发送操作会在 5 秒内返回结果，无论成功还是失败。这可以节省 MCU 等待 AT 命令回复的时间。
 
@@ -827,6 +830,7 @@ TCP/IP AT 命令
 说明
 ^^^^^
 
+- 本命令需在连接建立完成（收到 ``CONNECT`` 消息）后再使用。
 - 当数据长度满足要求时，或数据中出现 ``\0`` 字符时 (0x5c，0x30 ASCII)，数据传输开始，系统返回普通命令模式，等待下一条 AT 命令。
 - 如果数据中包含 ``\<any>``，则会去掉反斜杠，只使用 ``<any>`` 符号。
 - 如果需要发送 ``\0``，请转义为 ``\\0``。
@@ -2842,5 +2846,5 @@ ping 对端主机
 - 在配置套接字选项前，**请充分了解该选项功能，以及配置后可能的影响**。
 - SO_LINGER 选项不建议配置较大的值。例如配置 SO_LINGER 值为 60，则 :ref:`AT+CIPCLOSE <cmd-CLOSE>` 命令在收不到对端 TCP FIN 包情况下，会导致 AT 阻塞 60 秒，从而无法响应其它命令。因此，SO_LINGER 建议保持默认值。
 - TCP_NODELAY 选项适用于吞吐量小但对实时性要求高的场景。开启后，:term:`LwIP` 会加快 TCP 的发送，但如果网络环境较差，会由于重传而导致吞吐降低。因此，TCP_NODELAY 建议保持默认值。
-- SO_SNDTIMEO 选项适用于 :ref:`AT+CIPSTART <cmd-START>` 命令未配置 keepalive 参数的应用场景。配置本选项后，:ref:`AT+CIPSEND <cmd-SEND>`、:ref:`AT+CIPSENDL <cmd-SENDL>`、:ref:`AT+CIPSENDEX <cmd-SENDEX>` 命令将会在该超时内退出，无论是否发送成功。这里，SO_SNDTIMEO 建议配置为 5 ~ 10 秒。
+- SO_SNDTIMEO 选项适用于 :ref:`AT+CIPSTART <cmd-START>` 命令未配置 keepalive 参数的应用场景。配置本选项后，:ref:`AT+CIPSEND <cmd-SEND>`、:ref:`AT+CIPSENDL <cmd-SENDL>`、:ref:`AT+CIPSENDEX <cmd-SENDEX>` 命令将会在该超时内退出，无论是否发送成功。这里，SO_SNDTIMEO 建议配置为 5 ~ 10 秒。请在进入 Network :term:`透传模式` 前配置该选项。之后退出透传模式时，如果当前正在重传 TCP 数据，且服务器一直不回复时，AT 可以更早返回，而不必等到默认 TCP 重传结束（最长约 90 秒）。
 - SO_KEEPALIVE 选项适用于主动定时检测连接是否断开的应用场景，通常 AT 作为 TCP 服务器时建议配置该选项。配置本选项后，会增加额外的网络带宽。SO_KEEPALIVE 建议配置值不小于 60 秒。

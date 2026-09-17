@@ -24,6 +24,10 @@ INPUT = \
     $(PROJECT_PATH)/components/at/include/esp_at_core.h \
     $(PROJECT_PATH)/components/at/include/esp_at.h
 
+## Search AT public headers when Doxygen preprocesses #include directives
+##
+INCLUDE_PATH = $(PROJECT_PATH)/components/at/include
+
 ## Get warnings for functions that have no documentation for their parameters or return value
 ##
 WARN_NO_PARAMDOC = YES
@@ -34,6 +38,7 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 PREDEFINED             = \
+    $(ENV_DOXYGEN_DEFINES) \
     __attribute__(x)= \
     __asm__(x)= \
     IDF_DEPRECATED(X)= \
@@ -45,7 +50,13 @@ PREDEFINED             = \
     configTHREAD_LOCAL_STORAGE_DELETE_CALLBACKS=1 \
     configNUM_THREAD_LOCAL_STORAGE_POINTERS=1 \
     configUSE_APPLICATION_TASK_TAG=1 \
-    configTASKLIST_INCLUDE_COREID=1
+    configTASKLIST_INCLUDE_COREID=1 \
+    CONFIG_AT_WIFI_COMMAND_SUPPORT=1 \
+    CONFIG_AT_NET_COMMAND_SUPPORT=1 \
+    CONFIG_AT_HTTP_COMMAND_SUPPORT=1 \
+    CONFIG_AT_WS_COMMAND_SUPPORT=1 \
+    CONFIG_AT_SELF_COMMAND_SUPPORT=1 \
+    CONFIG_AT_MEM_MONITOR_DEBUG=1
 
 ## Do not complain about not having dot
 ##

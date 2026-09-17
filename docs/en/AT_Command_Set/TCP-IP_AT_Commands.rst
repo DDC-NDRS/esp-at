@@ -544,6 +544,7 @@ Notes
 - Make sure there is more than 20 ms interval before the first ``+`` character, more than 20 ms interval after the third ``+`` character, less than 20 ms interval among the three ``+`` characters. Otherwise, the ``+`` characters will be sent out as normal data.
 - This command returns no reply.
 - Please wait for at least one second before sending the next AT command.
+- If TCP data is being retransmitted and the server does not reply when you exit the Network :term:`Passthrough Mode`, AT does not respond to subsequent AT commands until the retransmission finishes (the maximum timeout is about 90 seconds). Sending AT commands during this period results in ``busy p...``. To avoid the long wait, set the TCP send timeout with :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` (``<so_sndtimeo>``) before entering passthrough mode so that retransmission can end earlier.
 
 .. _cmd-SEND:
 
@@ -633,6 +634,7 @@ Parameters
 Notes
 ^^^^^
 
+- This command can only be used after the connection has been established (after the ``CONNECT`` message is received).
 - You can use :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` command to configure socket options for each TCP connection. For example, setting <so_sndtimeo> to 5000 will enable TCP send operation to return results within 5 seconds, regardless of success or failure. This can save the time that the MCU waits for AT command response.
 
 .. _cmd-SENDL:
@@ -709,6 +711,7 @@ Parameters
 Notes
 ^^^^^
 
+- This command can only be used after the connection has been established (after the ``CONNECT`` message is received).
 - It is recommended to use UART flow control, because if the UART receives data at a faster rate than the network sends, data loss may occur.
 - You can use :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` command to configure socket options for each TCP connection. For example, setting <so_sndtimeo> to 5000 will enable TCP send operation to return results within 5 seconds, regardless of success or failure. This can save the time that the MCU waits for AT command response.
 
@@ -827,6 +830,7 @@ Parameters
 Notes
 ^^^^^^
 
+- This command can only be used after the connection has been established (after the ``CONNECT`` message is received).
 - When the requirement of data length is met, or when the string ``\0`` (0x5c, 0x30 in ASCII) appears, the transmission of data starts. Go back to the normal command mode and wait for the next AT command.
 - If the data contains the ``\<any>``, it means that drop backslash symbol and only use ``<any>`` character.
 - When sending ``\0``, please use a backslash to escape it as ``\\0``.
@@ -2842,5 +2846,5 @@ Notes
 - Before configuring these socket options, **please make sure you fully understand the function of them and the possible impact after configuration**.
 - It is not recommended to set a large value for the SO_LINGER option. For example, if SO_LINGER is set to 60, the :ref:`AT+CIPCLOSE <cmd-CLOSE>` command may block for up to 60 seconds if {IDF_TARGET_NAME} does not receive a TCP FIN packet from the remote TCP peer due to network issues. During this period, {IDF_TARGET_NAME} will be unable to respond to any other AT commands. Therefore, it is recommended to keep the SO_LINGER option at its default value.
 - The TCP_NODELAY option is used for situations with low throughput but high real-time requirements. When enabled, :term:`LwIP` will speed up TCP transmission. However, in poor network conditions, this may lead to increased retransmissions and reduced throughput. Therefore, it is recommended to keep the TCP_NODELAY option at its default value.
-- The SO_SNDTIMEO option is used for situations where the keepalive parameter is not configured in :ref:`AT+CIPSTART <cmd-START>` command. After this option is configured, :ref:`AT+CIPSEND <cmd-SEND>`, :ref:`AT+CIPSENDL <cmd-SENDL>`, and :ref:`AT+CIPSENDEX <cmd-SENDEX>` commands will exit within this timeout, regardless of whether data are sent successfully or not. Here, SO_SNDTIMEO is recommended to be set to 5 ~ 10 seconds.
+- The SO_SNDTIMEO option is used for situations where the keepalive parameter is not configured in :ref:`AT+CIPSTART <cmd-START>` command. After this option is configured, :ref:`AT+CIPSEND <cmd-SEND>`, :ref:`AT+CIPSENDL <cmd-SENDL>`, and :ref:`AT+CIPSENDEX <cmd-SENDEX>` commands will exit within this timeout, regardless of whether data are sent successfully or not. Here, SO_SNDTIMEO is recommended to be set to 5 ~ 10 seconds. Configure this option before entering the Network :term:`Passthrough Mode`. Then, if TCP data is being retransmitted and the server does not reply when you exit passthrough mode, AT can return earlier instead of waiting until the default TCP retransmission finishes (up to about 90 seconds).
 - The SO_KEEPALIVE option is used for actively and regularly detecting whether the connection is disconnected. It is generally recommended to configure this option when AT is used as a TCP server. After this option is configured, additional network bandwidth will be cost. Recommended value of SO_KEEPALIVE should be not less than 60 seconds.

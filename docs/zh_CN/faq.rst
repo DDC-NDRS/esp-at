@@ -163,6 +163,8 @@ ESP 系列模组出厂时 Flash 中未烧录 ESP-AT 固件，上电后会提示 
 
 如果 MCU 发送 AT+CIPSEND 后收到 busy p... 响应，表示上一条命令正在执行，当前输入无效。建议等待上一条命令响应完成后再发送新命令。
 
+如果使用 :ref:`+++ <cmd-PLUS>` 退出 Network :term:`透传模式` 时，当前正在重传 TCP 数据，且服务器一直不回复时，AT 需要等重传结束后才会响应后续 AT 命令（最大超时约为 90 秒），在此期间发送 AT 命令会提示 ``busy p...``。为避免长时间等待，请在进入透传模式前通过 :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` 设置 TCP 发送超时（``<so_sndtimeo>``），从而提前结束 TCP 数据重传。
+
 .. _faq-first-cmd-busy:
 
 :ref:`AT 固件，上电后发送第一个命令总是会返回下面的信息，为什么？ <faq-at-index>`

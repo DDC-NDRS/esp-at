@@ -163,6 +163,8 @@ When there are extra invisible characters (such as spaces after a command), the 
 
 If the MCU sends AT+CIPSEND and receives a busy p... response, it means the previous command is still executing and the current input is invalid. Wait for the previous command response to complete before sending a new command.
 
+If you exit the Network :term:`Passthrough Mode` with :ref:`+++ <cmd-PLUS>` while TCP data is being retransmitted and the server does not reply, AT does not respond to subsequent AT commands until the retransmission finishes (the maximum timeout is about 90 seconds), and sending AT commands during this period results in ``busy p...``. To avoid the long wait, set the TCP send timeout with :ref:`AT+CIPTCPOPT <cmd-TCPOPT>` (``<so_sndtimeo>``) before entering passthrough mode so that retransmission can end earlier.
+
 .. _faq-first-cmd-busy:
 
 :ref:`Why does the AT firmware always return the following message after I power up the device and send the first command? <faq-at-index>`

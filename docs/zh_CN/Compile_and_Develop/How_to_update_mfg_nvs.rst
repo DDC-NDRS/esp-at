@@ -41,13 +41,13 @@ mfg_nvs (:term:`manufacturing nvs`) 分区定义在 ``esp-at/module_config/{modu
 
   - Linux or macOS
 
-      请使用 `esptool.py <https://github.com/espressif/esptool>`_。
+      请使用 `esptool <https://github.com/espressif/esptool>`_。
 
       你可以在 ESP-AT 根目录执行以下命令下载 mfg_nvs.bin 文件。
 
       .. code-block:: none
 
-          esptool.py --chip auto --port PORTNAME --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB ADDRESS mfg_nvs.bin
+          esptool --chip auto --port PORTNAME --baud 921600 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB ADDRESS mfg_nvs.bin
 
       将 ``PORTNAME`` 替换为你的串口名称。``ADDRESS`` 替换为下载 mfg_nvs.bin 文件的地址，你可以通过 :ref:`AT+SYSFLASH? <cmd-SYSFLASH>` 命令查询下载地址。
 

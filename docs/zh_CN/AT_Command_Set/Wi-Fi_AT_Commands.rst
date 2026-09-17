@@ -986,28 +986,37 @@ Wi-Fi AT 命令集
 参数
 ^^^^
 
-- **<"ssid">**：字符串参数，接入点名称
-- **<"pwd">**：字符串参数，密码，范围：8 ~ 64 字节 ASCII
-- **<channel>**：信道号
-- **<ecn>**：加密方式，不支持 WEP
+.. list::
 
-   - 0: OPEN
-   - 2: WPA_PSK
-   - 3: WPA2_PSK
-   - 4: WPA_WPA2_PSK
+  - **<"ssid">**：字符串参数，接入点名称
+  - **<"pwd">**：字符串参数，密码，范围：8 ~ 64 字节 ASCII
+  - **<channel>**：信道号
+  :esp32c5: - 请勿将 ``<channel>`` 设置为 DFS（雷达）信道，详见说明
+  - **<ecn>**：加密方式，不支持 WEP
 
-- **<max conn>**：允许连入 {IDF_TARGET_NAME} SoftAP 的最多 station 数目，取值范围：参考 `max_connection 描述 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/api-guides/wifi-driver/overview.html#ap>`_。
-- **<ssid hidden>**：
+     - 0: OPEN
+     - 2: WPA_PSK
+     - 3: WPA2_PSK
+     - 4: WPA_WPA2_PSK
+     - 6: WPA3_PSK
+     - 7: WPA2_WPA3_PSK
 
-   - 0: 广播 SSID（默认）
-   - 1: 不广播 SSID
+  - **<max conn>**：允许连入 {IDF_TARGET_NAME} SoftAP 的最多 station 数目，取值范围：参考 `max_connection 描述 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/api-guides/wifi-driver/overview.html#ap>`_
+  - **<ssid hidden>**：
+
+     - 0: 广播 SSID（默认）
+     - 1: 不广播 SSID
 
 说明
 ^^^^
 
-- 本命令只有当 :ref:`AT+CWMODE=2 <cmd-MODE>` 或者 :ref:`AT+CWMODE=3 <cmd-MODE>` 时才有效。
-- 若 :ref:`AT+SYSSTORE=1 <cmd-SYSSTORE>`，配置更改将保存在 NVS 分区。
-- 默认 SSID 因设备而异，因为它由设备的 MAC 地址组成。 你可以使用 :ref:`AT+CWSAP? <cmd-SAP>` 查询默认的 SSID。
+.. list::
+
+  - 本命令只有当 :ref:`AT+CWMODE=2 <cmd-MODE>` 或者 :ref:`AT+CWMODE=3 <cmd-MODE>` 时才有效。
+  - 若 :ref:`AT+SYSSTORE=1 <cmd-SYSSTORE>`，配置更改将保存在 NVS 分区。
+  - 默认 SSID 因设备而异，因为它由设备的 MAC 地址组成。你可以使用 :ref:`AT+CWSAP? <cmd-SAP>` 查询默认的 SSID。
+  :esp32c5: - {IDF_TARGET_NAME} 作为 SoftAP 时不支持主动雷达检测，因此不能工作在 DFS 信道上。请勿将 ``<channel>`` 设置为 DFS 信道（5 GHz 频段上通常为信道 52～144）。详见 `动态频率选择 (DFS) <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/api-guides/wifi-driver/overview.html#dfs>`_ 以及 `5 GHz WLAN 信道列表 <https://zh.wikipedia.org/wiki/%E6%97%A0%E7%BA%BF%E5%B1%80%E5%9F%9F%E7%BD%91%E4%BF%A1%E9%81%93%E5%88%97%E8%A1%A8#5_GHz_%28802.11a/h/j/n/ac/ax%29>`_。
+  :esp32c5: - 建议在配置 SoftAP 前先使用 :ref:`AT+CWCOUNTRY <cmd-COUNTRY>` 设置 Wi-Fi 国家代码，使可用信道集合符合当地法规。
 
 示例
 ^^^^
@@ -1015,6 +1024,12 @@ Wi-Fi AT 命令集
 ::
 
     AT+CWSAP="ESP","1234567890",5,3
+
+    // 仅 WPA3-Personal
+    AT+CWSAP="ESP","1234567890",6,6
+
+    // WPA2/WPA3 混合模式
+    AT+CWSAP="ESP","1234567890",6,7
 
 .. _cmd-LIF:
 
