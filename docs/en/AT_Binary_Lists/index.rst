@@ -38,7 +38,10 @@ The ESP-AT firmware package contains several binary files for specific functiona
   │   └── mfg_nvs.bin         // Factory configuration parameters, parameter values are listed in the mfg_nvs.csv file in the same directory
   ├── esp-at.bin              // AT application firmware
   ├── factory
-  │   └── factory_xxx.bin     // Collection of binary files for specific functionalities. You can burn only this file to the flash space with a starting address of 0, or burn several binary files to the flash space corresponding to the starting address according to the information in the download.config file.
+  │   ├── factory_xxx.bin            // Combined factory bin filled through the end of ota_1
+  │   └── factory_xxx_unfilled.bin   // Combined factory bin filled through the end of the AT application (recommended)
   ├── partition_table
   │   └── partition-table.bin // Primary partition table (system partition table)
   └── ota_data_initial.bin    // OTA data initialization file
+
+You can either flash a combined factory bin to address 0 (``factory_xxx_unfilled.bin`` is recommended), or flash several binary files to different addresses according to ``download.config``. For the difference between the two factory bins, see :doc:`../Get_Started/Downloading_guide`.

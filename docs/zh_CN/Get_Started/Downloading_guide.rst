@@ -2,58 +2,207 @@
 ==========
 
 {IDF_TARGET_MODULE_NAME: default="undefined", esp32="ESP32-WROOM-32", esp32c2="ESP8684-MINI-1", esp32c3="ESP32-C3-MINI-1", esp32c5="ESP32-C5-WROOM-1", esp32c6="ESP32-C6-MINI-1", esp32c61="ESP32-C61-WROOM-1", esp32s2="ESP32-S2-MINI"}
-{IDF_TARGET_FACTORY_BIN: default="undefined", esp32="ESP32-WROOM-32-AT-V3.2.0.0", esp32c2="ESP32C2-4MB-AT-V3.3.0.0", esp32c3="ESP32-C3-MINI-1-AT-V3.3.0.0", esp32c5="ESP32C5-4MB-AT-V5.0.0.0", esp32c6="ESP32C6-4MB-AT-V4.0.0.0", esp32c61="ESP32C61-4MB-AT-V5.0.0.0", esp32s2="ESP32-S2-MINI-AT-V3.4.0.0"}
+{IDF_TARGET_FACTORY_FILE: default="factory/factory_XXX.bin", esp32="factory/factory_WROOM-32.bin", esp32c2="factory/factory_ESP32C2-4MB.bin", esp32c3="factory/factory_MINI-1.bin", esp32c5="factory/factory_ESP32C5-4MB.bin", esp32c6="factory/factory_ESP32C6-4MB.bin", esp32c61="factory/factory_ESP32C61-4MB.bin", esp32s2="factory/factory_MINI-1.bin"}
+{IDF_TARGET_FACTORY_FILE_UNFILLED: default="factory/factory_XXX_unfilled.bin", esp32="factory/factory_WROOM-32_unfilled.bin", esp32c2="factory/factory_ESP32C2-4MB_unfilled.bin", esp32c3="factory/factory_MINI-1_unfilled.bin", esp32c5="factory/factory_ESP32C5-4MB_unfilled.bin", esp32c6="factory/factory_ESP32C6-4MB_unfilled.bin", esp32c61="factory/factory_ESP32C61-4MB_unfilled.bin", esp32s2="factory/factory_MINI-1_unfilled.bin"}
 
 :link_to_translation:`en:[English]`
 
-本文档以 {IDF_TARGET_MODULE_NAME} 模组为例，介绍如何下载 {IDF_TARGET_MODULE_NAME} 模组对应的 AT 固件，以及如何将固件烧录到模组上，其它 {IDF_TARGET_NAME} 系列模组也可参考本文档。
+本文档以 {IDF_TARGET_MODULE_NAME} 模组为例，介绍如何下载 AT 固件并将其烧录到模组上。其它 {IDF_TARGET_NAME} 系列模组也可参考本文档。
 
-下载和烧录 AT 固件之前，请确保你已正确连接所需硬件，具体可参考 :doc:`Hardware_connection`。
+下载和烧录 AT 固件之前，请确保已正确连接所需硬件，详见 :doc:`Hardware_connection`。
 
-对于不同系列的模组，AT 默认固件所支持的命令会有所差异。具体可参考 :doc:`/Compile_and_Develop/esp-at_firmware_differences`。
+不同系列模组的 AT 默认固件所支持的命令有所差异，详见 :doc:`/Compile_and_Develop/esp-at_firmware_differences`。
+
+请根据下方详细步骤，完成 AT 固件的下载、烧录和检查。
+
+* :ref:`download-at-firmware`
+* :ref:`flash-at-firmware-into-your-device`
+
+  * :ref:`flash-factory-bin`
+
+    * :ref:`flash-factory-windows`
+    * :ref:`flash-factory-linux`
+
+  * :ref:`flash-multiple-bins`
+
+    * :ref:`flash-multiple-windows`
+    * :ref:`flash-multiple-linux`
+
+* :ref:`check-whether-at-works`
 
 .. _download-at-firmware:
 
-下载 AT 固件
--------------
+第一步：下载 AT 固件
+--------------------
 
-请按照以下步骤将 AT 固件下载至 PC：
+请前往 :doc:`{IDF_TARGET_NAME} AT 发布版固件 <../AT_Binary_Lists/esp_at_binaries>`，下载对应模组的固件并解压。
 
-- 前往 :doc:`../AT_Binary_Lists/index`
-- 找到你的模组所对应的 AT 固件
-- 点击相应链接进行下载
+.. only:: esp32
 
-此处，我们下载了 {IDF_TARGET_MODULE_NAME} 对应的 ``{IDF_TARGET_FACTORY_BIN}`` 固件，该固件的目录结构及其中各个 bin 文件介绍如下，其它 {IDF_TARGET_NAME} 系列模组固件的目录结构及 bin 文件也可参考如下介绍：
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32-wroom-32-series`。
 
+.. only:: esp32c2
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32c2-4mb-series`。
+
+.. only:: esp32c3
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32c3-mini-1-series`。
+
+.. only:: esp32c5
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32c5-4mb-series`。
+
+.. only:: esp32c6
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32c6-4mb-series`。
+
+.. only:: esp32c61
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32c61-4mb-series`。
+
+.. only:: esp32s2
+
+   {IDF_TARGET_MODULE_NAME} 固件见 :ref:`firmware-esp32s2-mini-series`。
+
+``factory`` 目录下有两份量产固件，均可烧录到地址 ``0x0``：
+
+- ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` （推荐）：单文件即可满足全部必要功能，体积最小、烧录最快。较新发布的固件包中提供。将必要区域填充为 ``0xFF``，直至 ``ota_0`` 分区中 AT 应用固件 ``esp-at.bin`` 的末尾。若固件包中未提供该文件，请使用 ``{IDF_TARGET_FACTORY_FILE}``。
+- ``{IDF_TARGET_FACTORY_FILE}``：单文件即可满足全部必要功能，但文件较大、烧录较慢。早期填充方式，新固件包中仍会提供。填充至最后一个分区 ``ota_1`` 的末尾，文件大小通常为 2 MB 或 4 MB。
+
+固件包中其它文件的说明见 :ref:`firmware-package-contents`。
+
+.. _flash-at-firmware-into-your-device:
+
+第二步：烧录 AT 固件至设备
+--------------------------
+
+根据使用场景选择烧录方式。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 38 40
+
+   * - 方式
+     - 适用场景
+     - 说明
+   * - :ref:`方式一 <flash-factory-bin>`
+     - 首次烧录、量产
+     - 将一份量产固件烧录到 ``0x0``。推荐 ``{IDF_TARGET_FACTORY_FILE_UNFILLED}``。
+   * - :ref:`方式二 <flash-multiple-bins>`
+     - 更新部分分区、二次开发
+     - 按 ``download.config`` 将多个 bin 烧录到对应地址。
+
+.. _flash-factory-bin:
+
+方式一：烧录量产固件（推荐）
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+将 ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` （推荐）或 ``{IDF_TARGET_FACTORY_FILE}`` 烧录到地址 ``0x0``。
+
+.. _flash-factory-windows:
+
+Windows
+~~~~~~~
+
+开始烧录之前，请下载 Windows `Flash 下载工具 <https://dl.espressif.com/public/flash_download_tool.zip>`_，详见 `Flash 下载工具用户指南 <https://docs.espressif.com/projects/esp-test-tools/zh_CN/latest/{IDF_TARGET_PATH_NAME}/production_stage/tools/flash_download_tool.html>`_。请确认开发板下载接口的 COM 端口号，稍后在 "COM:" 下拉列表中选择该端口。如何查看端口号，见 `在 Windows 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#windows>`_。
+
+- 打开 Flash 下载工具
+- 选择芯片类型（此处选择 ``{IDF_TARGET_NAME}``）
+- 选择工作模式（此处选择 ``develop``）
+- 选择下载接口（此处选择 ``uart``）
+
+   .. figure:: ../../_static/get_started/download_guide/download_tool_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :alt: 固件下载配置选择
+      :figclass: align-center
+
+      固件下载配置选择
+
+- 选择 ``{IDF_TARGET_FACTORY_FILE_UNFILLED}`` （推荐）或 ``{IDF_TARGET_FACTORY_FILE}``，烧录地址为 ``0x0``
+- 勾选 "DoNotChgBin"，使用量产固件中的 flash 参数
+- 选择正确的 COM 口后开始烧录
+
+   .. figure:: ../../_static/get_started/download_guide/download_one_bin_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :scale: 70%
+      :alt: 下载至单个地址界面图
+
+      下载至单个地址界面图（点击放大）
+
+烧录完成后，请 :ref:`检查 AT 固件是否烧录成功 <check-whether-at-works>`。
+
+.. _flash-factory-linux:
+
+Linux 或 macOS
+~~~~~~~~~~~~~~
+
+开始烧录之前，请安装 `esptool <https://github.com/espressif/esptool>`_：
 
 .. code-block:: none
 
-   .
-   ├── at_customize.bin                 // 二级分区表
-   ├── bootloader                       // bootloader
-   │   └── bootloader.bin
-   ├── customized_partitions            // AT 自定义 bin 文件
-         ├── mfg_nvs.csv                  // 量产 NVS 分区的原始数据
-   │   └── mfg_nvs.bin                  // 量产 NVS 分区 bin 文件
-   ├── download.config                  // 烧录固件的参数
-   ├── esp-at.bin                       // AT 应用固件
-   ├── esp-at.elf
-   ├── esp-at.map
-   ├── factory                          // 量产所需打包好的 bin 文件
-   │   └── factory_XXX.bin
-   ├── flasher_args.json                // 下载参数信息新的格式
-   ├── ota_data_initial.bin             // ota data 区初始值
-   ├── partition_table                  // 一级分区列表
-   │   └── partition-table.bin
-   └── sdkconfig                        // AT 固件对应的编译配置
+   pip install esptool
 
-其中，``download.config`` 文件包含烧录固件的参数：
+请将下列命令中的端口名替换为开发板的下载接口，并在解压后的固件目录中执行。若无法确定接口名称，请参考 `在 Linux 和 macOS 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#linux-macos>`_。推荐烧录 ``{IDF_TARGET_FACTORY_FILE_UNFILLED}``。
 
 .. only:: esp32
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 40m --flash_size 4MB
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x0 factory/factory_WROOM-32_unfilled.bin
+
+.. only:: esp32c2
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 60m --flash-size 4MB 0x0 factory/factory_ESP32C2-4MB_unfilled.bin
+
+.. only:: esp32c3
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x0 factory/factory_MINI-1_unfilled.bin
+
+.. only:: esp32c5
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C5-4MB_unfilled.bin
+
+.. only:: esp32c6
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C6-4MB_unfilled.bin
+
+.. only:: esp32c61
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_ESP32C61-4MB_unfilled.bin
+
+.. only:: esp32s2
+
+   .. code-block:: none
+
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x0 factory/factory_MINI-1_unfilled.bin
+
+烧录完成后，请 :ref:`检查 AT 固件是否烧录成功 <check-whether-at-works>`。
+
+.. _flash-multiple-bins:
+
+方式二：按 download.config 分地址烧录
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+适用于更新部分分区或二次开发。请按 ``download.config`` 配置各 bin 文件的烧录地址和 flash 参数。
+
+{IDF_TARGET_MODULE_NAME} 对应固件的 ``download.config`` 如下：
+
+.. only:: esp32
+
+   .. code-block:: none
+
+      --flash-mode dio --flash-freq 40m --flash-size 4MB
       0x1000 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0x10000 ota_data_initial.bin
@@ -65,7 +214,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 60m --flash_size 4MB
+      --flash-mode dio --flash-freq 60m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -77,7 +226,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 40m --flash_size 4MB
+      --flash-mode dio --flash-freq 40m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -89,7 +238,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x2000 bootloader/bootloader.bin
       0xc000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -101,7 +250,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -113,7 +262,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x0 bootloader/bootloader.bin
       0xc000 partition_table/partition-table.bin
       0xd000 ota_data_initial.bin
@@ -125,7 +274,7 @@
 
    .. code-block:: none
 
-      --flash_mode dio --flash_freq 80m --flash_size 4MB
+      --flash-mode dio --flash-freq 80m --flash-size 4MB
       0x1000 bootloader/bootloader.bin
       0x8000 partition_table/partition-table.bin
       0x10000 ota_data_initial.bin
@@ -135,196 +284,117 @@
 
 .. list::
 
-   - ``--flash_mode dio`` 代表此固件采用的 flash dio 模式进行编译；
-   :esp32 or esp32c3: - ``--flash_freq 40m`` 代表此固件采用的 flash 通讯频率为 40 MHz；
-   :esp32c2: - ``--flash_freq 60m`` 代表此固件采用的 flash 通讯频率为 60 MHz；
-   :esp32c5 or esp32c6 or esp32c61 or esp32s2: - ``--flash_freq 80m`` 代表此固件采用的 flash 通讯频率为 80 MHz；
-   - ``--flash_size 4MB`` 代表此固件适用的 flash 最小为 4 MB；
+   - ``--flash-mode dio`` 代表此固件采用的 flash dio 模式进行编译；
+   :esp32 or esp32c3: - ``--flash-freq 40m`` 代表此固件采用的 flash 通讯频率为 40 MHz；
+   :esp32c2: - ``--flash-freq 60m`` 代表此固件采用的 flash 通讯频率为 60 MHz；
+   :esp32c5 or esp32c6 or esp32c61 or esp32s2: - ``--flash-freq 80m`` 代表此固件采用的 flash 通讯频率为 80 MHz；
+   - ``--flash-size 4MB`` 代表此固件适用的 flash 最小为 4 MB；
    :esp32 or esp32s2: - ``0x10000 ota_data_initial.bin`` 代表在 ``0x10000`` 地址烧录 ``ota_data_initial.bin`` 文件。
    :esp32c2 or esp32c3 or esp32c5 or esp32c6 or esp32c61: - ``0xd000 ota_data_initial.bin`` 代表在 ``0xd000`` 地址烧录 ``ota_data_initial.bin`` 文件。
 
-.. _flash-at-firmware-into-your-device:
-
-烧录 AT 固件至设备
--------------------
-
-请根据你的操作系统选择对应的烧录方法。
+.. _flash-multiple-windows:
 
 Windows
-^^^^^^^^
+~~~~~~~
 
-开始烧录之前，请下载 Windows `Flash 下载工具 <https://dl.espressif.com/public/flash_download_tool.zip>`_，详细指导可参阅 `Flash 下载工具用户指南 <https://docs.espressif.com/projects/esp-test-tools/zh_CN/latest/{IDF_TARGET_PATH_NAME}/production_stage/tools/flash_download_tool.html>`_。
+配置方式与 :ref:`flash-factory-bin` 中 Windows 部分相同，区别如下：
 
-- 打开 Flash 下载工具
-- 选择芯片类型（此处，我们选择 ``{IDF_TARGET_NAME}``）
-- 根据你的需求选择一种工作模式（此处，我们选择 ``develop``)
-- 根据你的需求选择一种下载接口（此处，我们选择 ``uart``)
+- 根据 ``download.config`` 配置各 bin 文件及对应地址
+- 请勿勾选 "DoNotChgBin"，并将 SPI SPEED、SPI MODE 设置成与 ``download.config`` 一致
 
-.. figure:: ../../_static/get_started/download_guide/download_tool_{IDF_TARGET_PATH_NAME}.png
-   :align: center
-   :alt: 固件下载配置选择
-   :figclass: align-center
+   .. figure:: ../../_static/get_started/download_guide/download_multi_bin_{IDF_TARGET_PATH_NAME}.png
+      :align: center
+      :scale: 60%
+      :alt: 下载至多个地址界面图
 
-   固件下载配置选择
+      下载至多个地址界面图（点击放大）
 
-- 将 AT 固件烧录至设备，以下两种方式任选其一：
+烧录完成后，请 :ref:`检查 AT 固件是否烧录成功 <check-whether-at-works>`。
 
-   - 直接下载打包好的量产固件（即 ``build/factory`` 目录下的 ``factory_XXX.bin``）至 ``0x0`` 地址：勾选 "DoNotChgBin"，使用量产固件的默认配置；
-
-     .. figure:: ../../_static/get_started/download_guide/download_one_bin_{IDF_TARGET_PATH_NAME}.png
-        :align: center
-        :scale: 70%
-        :alt: 下载至单个地址界面图
-
-        下载至单个地址界面图（点击放大）
-
-   - 分开下载多个 bin 文件至不同的地址：根据 ``download.config`` 文件进行配置，请勿勾选 "DoNotChgBin"；
-
-     .. figure:: ../../_static/get_started/download_guide/download_multi_bin_{IDF_TARGET_PATH_NAME}.png
-        :align: center
-        :scale: 60%
-        :alt: 下载至多个地址界面图
-
-        下载至多个地址界面图（点击放大）
-
-为了避免烧录出现问题，请查看开发板的下载接口的 COM 端口号，并从 "COM:" 下拉列表中选择该端口号。有关如何查看端口号的详细介绍请参考 `在 Windows 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#windows>`_。
-
-烧录完成后，请 `检查 AT 固件是否烧录成功`_。
+.. _flash-multiple-linux:
 
 Linux 或 macOS
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
-开始烧录之前，请安装 `esptool.py <https://github.com/espressif/esptool>`_。
+请将 ``PORTNAME`` 替换为开发板的下载接口，将 ``download.config`` 替换为该文件中的参数列表，并在解压后的固件目录中执行。若无法确定接口名称，请参考 `在 Linux 和 macOS 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#linux-macos>`_。
 
-以下两种方式任选其一，将 AT 固件烧录至设备：
+.. code-block:: none
 
-- 分开下载多个 bin 文件至不同的地址：输入以下命令，替换 ``PORTNAME`` 和 ``download.config`` 参数；
+    esptool --chip auto --port PORTNAME --baud 115200 --before default-reset --after hard-reset write-flash -z download.config
 
-  .. code-block:: none
+以下为烧录至 {IDF_TARGET_MODULE_NAME} 模组的示例命令：
 
-      esptool.py --chip auto --port PORTNAME --baud 115200 --before default_reset --after hard_reset write_flash -z download.config
+.. only:: esp32
 
-  将 ``PORTNAME`` 替换成开发板的下载接口名称，若你无法确定该接口名称，请参考 `在 Linux 和 macOS 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#linux-macos>`_。
+   .. code-block:: none
 
-  将 ``download.config`` 替换成该文件里的参数列表。
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
 
-  以下是将固件烧录至 {IDF_TARGET_MODULE_NAME} 模组输入的命令：
+.. only:: esp32c2
 
-   .. only:: esp32
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 60m --flash-size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c3
 
-   .. only:: esp32c2
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 40m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 60m --flash_size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c5
 
-   .. only:: esp32c3
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x2000 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c6
 
-   .. only:: esp32c5
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x2000 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
+.. only:: esp32c61
 
-   .. only:: esp32c6
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
+.. only:: esp32s2
 
-   .. only:: esp32c61
+   .. code-block:: none
 
-      .. code-block:: none
+      esptool --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x1000 bootloader/bootloader.bin 0x100000 esp-at.bin 0x8000 partition_table/partition-table.bin 0x10000 ota_data_initial.bin 0x20000 at_customize.bin 0x21000 customized_partitions/mfg_nvs.bin
 
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0xc000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x0 bootloader/bootloader.bin 0xa0000 esp-at.bin 0x30000 at_customize.bin 0x31000 customized_partitions/mfg_nvs.bin
-
-   .. only:: esp32s2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 bootloader/bootloader.bin 0x60000 esp-at.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x1e000 at_customize.bin 0x1f000 customized_partitions/mfg_nvs.bin
-
-- 直接下载打包好的量产固件至 ``0x0`` 地址：输入以下命令，替换 ``PORTNAME`` 和 ``FILEDIRECTORY`` 参数；
-
-  .. code-block:: none
-
-     esptool.py --chip auto --port PORTNAME --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 FILEDIRECTORY
-
-  将 ``PORTNAME`` 替换成开发板的下载接口名称，若你无法确定该接口名称，请参考 `在 Linux 和 macOS 上查看端口 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/{IDF_TARGET_PATH_NAME}/get-started/establish-serial-connection.html#linux-macos>`_。
-
-  将 ``FILEDIRECTORY`` 替换成打包好的量产固件的文件路径，通常情况下，文件路径是 ``factory/XXX.bin``。
-
-  以下是将固件烧录至 {IDF_TARGET_MODULE_NAME} 模组输入的命令：
-
-   .. only:: esp32
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 factory/factory_WROOM-32.bin
-
-   .. only:: esp32c2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 60m --flash_size 4MB 0x0 factory/factory_ESP32C2-4MB.bin
-
-   .. only:: esp32c3
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size 4MB 0x0 factory/factory_MINI-1.bin
-
-   .. only:: esp32c5
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C5-4MB.bin
-
-   .. only:: esp32c6
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C6-4MB.bin
-
-   .. only:: esp32c61
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_ESP32C61-4MB.bin
-
-   .. only:: esp32s2
-
-      .. code-block:: none
-
-         esptool.py --chip auto --port /dev/tty.usbserial-0001 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 factory/factory_MINI-1.bin
-
-烧录完成后，请 `检查 AT 固件是否烧录成功`_。
+烧录完成后，请 :ref:`检查 AT 固件是否烧录成功 <check-whether-at-works>`。
 
 .. _check-whether-at-works:
 
-检查 AT 固件是否烧录成功
--------------------------
+第三步：检查 AT 固件是否烧录成功
+--------------------------------
 
-请按照以下步骤检查 AT 固件是否烧录成功：
+打开串口工具（如 SecureCRT），按以下参数连接用于发送或接收“AT 命令/响应”的串口，端口说明见 :doc:`Hardware_connection`：
 
-- 打开串口工具，如 SecureCRT；
-- 串口：选择用于发送或接收“AT 命令/响应”的串口（详情请见 :doc:`Hardware_connection`）；
-- 波特率：115200；
-- 数据位：8；
-- 检验位：None；
-- 停止位：1；
-- 流控：None；
-- 输入 "AT+GMR" 命令，并且换行 (CR LF)；
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
 
-若如下所示，响应是 ``OK``, 则表示 AT 固件烧录成功。
+   * - 参数
+     - 取值
+   * - 波特率
+     - 115200
+   * - 数据位
+     - 8
+   * - 校验位
+     - None
+   * - 停止位
+     - 1
+   * - 流控
+     - None
+   * - 换行
+     - CR LF
+
+输入 ``AT+GMR`` 命令并换行。若响应为 ``OK``，则表示 AT 固件烧录成功。
 
 .. only:: esp32c2
 
@@ -410,29 +480,14 @@ Linux 或 macOS
 
       OK
 
-否则，你需要通过以下方式之一检查 {IDF_TARGET_NAME} 设备开机日志：
+若未返回 ``OK``，请查看 {IDF_TARGET_NAME} 开机日志，确认固件是否正确初始化。
 
-**方法 1：**
+- 打开串口工具，选择用于“下载固件/输出日志”的串口，串口详情见 :doc:`Hardware_connection`。
+- 波特率 115200，数据位 8，校验位 None，停止位 1，流控 None。
+- 按下开发板的 RST 键。若日志与下面的参考日志相似，则说明 ESP-AT 固件已经正确初始化。
 
-- 打开串口工具，如 SecureCRT；
-- 串口：选择用于“下载固件/输出日志”的串口，串口详情请参阅 :doc:`Hardware_connection`。
-- 波特率：115200；
-- 数据位：8；
-- 检验位：None；
-- 停止位：1；
-- 流控：None；
-- 直接按开发板的 RST 键，若日志和下面的日志相似，则说明 ESP-AT 固件已经正确初始化了。
-
-**方法 2：**
-
-- 打开两个串口工具，如 SecureCRT；
-- 串口：分别选择用于发送或接收“AT 命令/响应”的串口以及用于“下载固件/输出日志”的串口，串口详情请参阅 :doc:`Hardware_connection`。
-- 波特率：115200；
-- 数据位：8；
-- 检验位：None；
-- 停止位：1；
-- 流控：None；
-- 在发送或接收“AT 命令/响应”的串口输入 :ref:`AT+RST <cmd-RST>` 命令，并且换行 (CR LF)，若“下载固件/输出日志”的串口日志和下面的日志相似，则说明 ESP-AT 固件已经正确初始化了。
+参考日志
+^^^^^^^^
 
 .. only:: esp32
 
@@ -583,41 +638,42 @@ Linux 或 macOS
       Build:Jan 21 2025
       rst:0x1 (POWERON),boot:0x58 (SPI_FAST_FLASH_BOOT)
       SPI mode:DIO, clock div:1
-      load:0x408556b0,len:0x1710
-      load:0x4084bba0,len:0xd7c
-      load:0x4084e5a0,len:0x31bc
+      load:0x40855720,len:0x1b1c
+      load:0x4084bba0,len:0xdb8
+      load:0x4084e5a0,len:0x31f8
+      load:0x4085a000,len:0x222c
       entry 0x4084bbaa
-      I (23) boot: ESP-IDF v5.5-beta1-695-ga3ca8669f24-dir 2nd stage bootloader
-      I (24) boot: compile time Aug 25 2025 15:10:14
-      I (24) boot: chip revision: v1.0
-      I (26) boot: efuse block revision: v0.2
-      I (29) boot.esp32c5: SPI Speed      : 80MHz
-      I (33) boot.esp32c5: SPI Mode       : DIO
-      I (37) boot.esp32c5: SPI Flash Size : 4MB
-      I (41) boot: Enabling RNG early entropy source...
-      I (45) boot: Partition Table:
-      I (48) boot: ## Label            Usage          Type ST Offset   Length
-      I (54) boot:  0 otadata          OTA data         01 00 0000d000 00002000
-      I (60) boot:  1 phy_init         RF data          01 01 0000f000 00001000
-      I (67) boot:  2 nvs              WiFi data        01 02 00010000 0000e000
-      I (73) boot:  3 at_customize     unknown          40 00 0001e000 00042000
-      I (80) boot:  4 ota_0            OTA app          00 10 00060000 001d0000
-      I (86) boot:  5 ota_1            OTA app          00 11 00230000 001d0000
-      I (93) boot: End of partition table
-      I (97) esp_image: segment 0: paddr=00060020 vaddr=42170020 size=2c954h (182612) map
-      I (136) esp_image: segment 1: paddr=0008c97c vaddr=40800000 size=0369ch ( 13980) load
-      I (139) esp_image: segment 2: paddr=00090020 vaddr=42000020 size=16d640h (1496640) map
-      I (396) esp_image: segment 3: paddr=001fd668 vaddr=4080369c size=196d0h (104144) load
-      I (417) esp_image: segment 4: paddr=00216d40 vaddr=4081cd80 size=04998h ( 18840) load
-      I (421) esp_image: segment 5: paddr=0021b6e0 vaddr=50000000 size=000a4h (   164) load
-      I (428) boot: Loaded app from partition at offset 0x60000
-      I (429) boot: Disabling RNG early entropy source...
-      I (927) at-init: at param mode: 1
-      I (1554) at-uart: AT cmd port:uart1 tx:23 rx:24 cts:25 rts:26 baudrate:115200
-      I (1555) at-init: module_name: ESP32C5-4MB
-      I (1557) at-init: max tx power=78, ret=0
-      I (1560) at-init: v5.0.0.0 (gitlab)
-      I (2752) at-wifi: negotiated phy mode: 4
+      I (26) boot: ESP-IDF v5.5.1-833-gcc569cbd80-dirty 2nd stage bootloader
+      I (26) boot: compile time Nov 25 2025 03:43:46
+      I (27) boot: chip revision: v1.0
+      I (28) boot: efuse block revision: v0.2
+      I (31) boot.esp32c5: SPI Speed      : 80MHz
+      I (35) boot.esp32c5: SPI Mode       : DIO
+      I (39) boot.esp32c5: SPI Flash Size : 4MB
+      I (43) boot: Enabling RNG early entropy source...
+      I (47) boot: Partition Table:
+      I (50) boot: ## Label            Usage          Type ST Offset   Length
+      I (56) boot:  0 otadata          OTA data         01 00 0000d000 00002000
+      I (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+      I (69) boot:  2 nvs              WiFi data        01 02 00010000 00020000
+      I (76) boot:  3 at_customize     unknown          40 00 00030000 00070000
+      I (82) boot:  4 ota_0            OTA app          00 10 000a0000 00220000
+      I (89) boot:  5 ota_1            OTA app          00 11 002c0000 00140000
+      I (95) boot: End of partition table
+      I (99) esp_image: segment 0: paddr=000a0020 vaddr=42170020 size=2c724h (182052) map
+      I (138) esp_image: segment 1: paddr=000cc74c vaddr=40800000 size=038cch ( 14540) load
+      I (142) esp_image: segment 2: paddr=000d0020 vaddr=42000020 size=16d084h (1495172) map
+      I (403) esp_image: segment 3: paddr=0023d0ac vaddr=408038cc size=19ff8h (106488) load
+      I (425) esp_image: segment 4: paddr=002570ac vaddr=4081d900 size=049b4h ( 18868) load
+      I (429) esp_image: segment 5: paddr=0025ba68 vaddr=50000000 size=000a4h (   164) load
+      I (437) boot: Loaded app from partition at offset 0xa0000
+      I (437) boot: Disabling RNG early entropy source...
+      I (948) at-init: at param mode: 1
+      I (1605) at-uart: AT cmd port:uart1 tx:23 rx:24 cts:25 rts:26 baudrate:115200
+      I (1607) at-init: module_name: ESP32C5-4MB
+      I (1608) at-init: max tx power=78, ret=0
+      I (1611) at-init: v5.0.0.0 (gitlab)
+
 
 .. only:: esp32c6
 
@@ -714,7 +770,7 @@ Linux 或 macOS
 
 .. only:: esp32s2
 
-   {IDF_TARGET_NAME} startup log:
+   {IDF_TARGET_NAME} 开机日志：
 
    .. code-block:: none
 
@@ -757,3 +813,32 @@ Linux 或 macOS
       module_name: MINI
       max tx power=78, ret=0
       v3.4.0.0-dev
+
+.. _firmware-package-contents:
+
+附录：固件包内容
+----------------
+
+解压后的 AT 固件目录结构如下（也可参考 :ref:`brief-intro-firmware`）：
+
+.. code-block:: none
+
+   .
+   ├── at_customize.bin                 // 二级分区表
+   ├── bootloader                       // bootloader
+   │   └── bootloader.bin
+   ├── customized_partitions            // AT 自定义 bin 文件
+   │   ├── mfg_nvs.csv                  // 量产 NVS 分区的原始数据
+   │   └── mfg_nvs.bin                  // 量产 NVS 分区 bin 文件
+   ├── download.config                  // 烧录固件的参数
+   ├── esp-at.bin                       // AT 应用固件
+   ├── esp-at.elf
+   ├── esp-at.map
+   ├── factory                          // 量产所需打包好的 bin 文件
+   │   ├── factory_XXX.bin              // 填充至 ota_1 末尾的量产固件
+   │   └── factory_XXX_unfilled.bin     // 填充至 AT 应用固件末尾的量产固件（推荐）
+   ├── flasher_args.json                // 烧录参数
+   ├── ota_data_initial.bin             // ota data 区初始值
+   ├── partition_table                  // 一级分区列表
+   │   └── partition-table.bin
+   └── sdkconfig                        // AT 固件对应的编译配置

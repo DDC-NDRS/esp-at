@@ -986,28 +986,37 @@ Set the configuration of an {IDF_TARGET_NAME} SoftAP.
 Parameters
 ^^^^^^^^^^
 
-- **<"ssid">**: string parameter showing SSID of the AP.
-- **<"pwd">**: string parameter showing the password. Length: 8 ~ 64 bytes ASCII.
-- **<channel>**: channel ID.
-- **<ecn>**: encryption method; WEP is not supported.
+.. list::
 
-   - 0: OPEN
-   - 2: WPA_PSK
-   - 3: WPA2_PSK
-   - 4: WPA_WPA2_PSK
+  - **<"ssid">**: string parameter showing SSID of the AP.
+  - **<"pwd">**: string parameter showing the password. Length: 8 ~ 64 bytes ASCII.
+  - **<channel>**: channel ID.
+  :esp32c5: - Do not set ``<channel>`` to a DFS (radar) channel. See Notes.
+  - **<ecn>**: encryption method; WEP is not supported.
 
-- **<max conn>**: maximum number of stations that {IDF_TARGET_NAME} SoftAP can connect. Range: refer to `max_connection description <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/api-guides/wifi-driver/overview.html#ap-basic-configuration>`_.
-- **<ssid hidden>**:
+     - 0: OPEN
+     - 2: WPA_PSK
+     - 3: WPA2_PSK
+     - 4: WPA_WPA2_PSK
+     - 6: WPA3_PSK
+     - 7: WPA2_WPA3_PSK
 
-   - 0: Broadcasting SSID (default).
-   - 1: Not broadcasting SSID.
+  - **<max conn>**: maximum number of stations that {IDF_TARGET_NAME} SoftAP can connect. Range: refer to `max_connection description <https://docs.espressif.com/projects/esp-idf/en/latest/{IDF_TARGET_PATH_NAME}/api-guides/wifi-driver/overview.html#ap-basic-configuration>`_.
+  - **<ssid hidden>**:
+
+     - 0: Broadcasting SSID (default).
+     - 1: Not broadcasting SSID.
 
 Notes
 ^^^^^
 
-- This command works only when :ref:`AT+CWMODE=2 <cmd-MODE>` or :ref:`AT+CWMODE=3 <cmd-MODE>`.
-- The configuration changes will be saved in the NVS partition if :ref:`AT+SYSSTORE=1 <cmd-SYSSTORE>`.
-- The default SSID varies from devices to device as it consists of the MAC address of the device. You can use :ref:`AT+CWSAP? <cmd-SAP>` to query the default SSID.
+.. list::
+
+  - This command works only when :ref:`AT+CWMODE=2 <cmd-MODE>` or :ref:`AT+CWMODE=3 <cmd-MODE>`.
+  - The configuration changes will be saved in the NVS partition if :ref:`AT+SYSSTORE=1 <cmd-SYSSTORE>`.
+  - The default SSID varies from device to device as it consists of the MAC address of the device. You can use :ref:`AT+CWSAP? <cmd-SAP>` to query the default SSID.
+  :esp32c5: - {IDF_TARGET_NAME} SoftAP does not support active radar detection, so it cannot operate on DFS channels. Do not set ``<channel>`` to a DFS channel (typically channels 52–144 in the 5 GHz band). See `Dynamic Frequency Selection (DFS) <https://docs.espressif.com/projects/esp-idf/en/latest/esp32c5/api-guides/wifi-driver/overview.html#dynamic-frequency-selection-dfs>`_ and the `5 GHz WLAN channel list <https://en.wikipedia.org/wiki/List_of_WLAN_channels#5_GHz_(802.11a/h/n/ac/ax/be/bn)>`_.
+  :esp32c5: - It is recommended to set the Wi-Fi country code with :ref:`AT+CWCOUNTRY <cmd-COUNTRY>` before configuring SoftAP, so that the allowed channel set matches the local regulations.
 
 Example
 ^^^^^^^^
@@ -1015,6 +1024,12 @@ Example
 ::
 
     AT+CWSAP="ESP","1234567890",5,3
+
+    // WPA3-Personal only
+    AT+CWSAP="ESP","1234567890",6,6
+
+    // WPA2/WPA3 transition
+    AT+CWSAP="ESP","1234567890",6,7
 
 .. _cmd-LIF:
 

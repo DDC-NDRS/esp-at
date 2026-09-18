@@ -153,7 +153,7 @@ ESP-AT 提供了二级分区表 at_customize.csv 供你存储自定义数据块�
 烧录 at_customize.bin 至 {IDF_TARGET_NAME} 设备
 -----------------------------------------------------
 
-将 at_customize.bin 下载到 flash 中。关于如何将二进制文件烧录至 {IDF_TARGET_NAME} 设备，请参考 :ref:`flash-at-firmware-into-your-device`。下表为不同模组 at_customize.bin 文件的下载地址。
+将 at_customize.bin 下载到 flash 中。关于如何将二进制文件烧录至 {IDF_TARGET_NAME} 设备，请参考 :ref:`flash-multiple-bins`。下表为不同模组 at_customize.bin 文件的下载地址。
 
 .. only:: esp32
 
@@ -296,7 +296,7 @@ ESP-AT 提供了二级分区表 at_customize.csv 供你存储自定义数据块�
 
 ::
 
-    python esp-idf/components/esptool_py/esptool/esptool.py -p PORT -b BAUD --before default_reset --after hard_reset --chip auto  write_flash --flash_mode dio --flash_size detect --flash_freq 40m {IDF_TARGET_AT_SECOND_PARTITION_ADDR} ./at_customize.bin
+    python esp-idf/components/esptool_py/esptool/esptool.py -p PORT -b BAUD --before default-reset --after hard-reset --chip auto  write-flash --flash-mode dio --flash-size detect --flash-freq 40m {IDF_TARGET_AT_SECOND_PARTITION_ADDR} ./at_customize.bin
 
 - ``PORT`` 替换为端口名称。
 - ``BAUD`` 替换为波特率。

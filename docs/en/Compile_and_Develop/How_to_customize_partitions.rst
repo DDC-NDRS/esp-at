@@ -153,7 +153,7 @@ If you use the script, execute the following command under the root directory of
 Flash at_customize.bin into {IDF_TARGET_NAME} Device
 ----------------------------------------------------
 
-Download the at_customize.bin into flash. Please refer to :ref:`flash-at-firmware-into-your-device` for how to flash bin files into {IDF_TARGET_NAME} device and the following table for the download address for your module.
+Download the at_customize.bin into flash. Please refer to :ref:`flash-multiple-bins` for how to flash bin files into {IDF_TARGET_NAME} device and the following table for the download address for your module.
 
 .. only:: esp32
 
@@ -296,7 +296,7 @@ Execute the following command under the root directory of ESP-AT project and rep
 
 ::
 
-    python esp-idf/components/esptool_py/esptool/esptool.py -p PORT -b BAUD --before default_reset --after hard_reset --chip auto write_flash --flash_mode dio --flash_size detect --flash_freq 40m {IDF_TARGET_AT_SECOND_PARTITION_ADDR} ./at_customize.bin
+    python esp-idf/components/esptool_py/esptool/esptool.py -p PORT -b BAUD --before default-reset --after hard-reset --chip auto write-flash --flash-mode dio --flash-size detect --flash-freq 40m {IDF_TARGET_AT_SECOND_PARTITION_ADDR} ./at_customize.bin
 
 - Replace ``PORT`` with your port name.
 - Replace ``BAUD`` with the baud rate.

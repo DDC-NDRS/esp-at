@@ -14,6 +14,7 @@ HTTP AT Commands
 - :ref:`AT+HTTPURLCFG <cmd-HTTPURLCFG>`: Set or get long HTTP URL.
 - :ref:`AT+HTTPCHEAD <cmd-HTTPCHEAD>`: Set or query HTTP request headers.
 - :ref:`AT+HTTPCFG <cmd-HTTPCFG>`: Set HTTP Client Configuration.
+- :ref:`AT+HTTPCSNI <cmd-HTTPCSNI>`: Query or set HTTP Server Name Indication (SNI).
 - :ref:`HTTP AT Error Codes <cmd-HTTPErrCode>`
 
 .. _cmd-http-intro:
@@ -85,6 +86,7 @@ Notes
 - The command does not support redirection. After getting the status code 301 (permanent redirection) or 302 (temporary redirection) from the server, AT will not automatically redirect to the new URL address. You can use some tools to get the actual URL, and then access it using this command.
 - If the length of the entire command containing the ``<"data">`` exceeds 256 bytes, please use the :ref:`AT+HTTPCPOST <cmd-HTTPCPOST>` command.
 - To set more HTTP request headers, use the :ref:`AT+HTTPCHEAD <cmd-HTTPCHEAD>` command.
+- Some HTTPS servers require the client to send the SNI extension during the TLS handshake. Configure SNI with :ref:`AT+HTTPCSNI <cmd-HTTPCSNI>` before sending the HTTP request. Typically, the SNI value is the domain name of the server.
 
 Example
 ^^^^^^^^
@@ -455,18 +457,103 @@ Notes
 - If you want to use your own certificate at runtime, use the :ref:`AT+SYSMFG <cmd-SYSMFG>` command to update the HTTP certificate (for detailed steps, please refer to :ref:`AT+SYSMFG command examples <sysmfg-pki>`, the certificate configuration method is the same as SSL certificates). If you want to pre-burn your own certificate, please refer to :doc:`../Compile_and_Develop/How_to_update_pki_config`.
 - If ``<auth_mode>`` is set to 2 or 3, to verify the validity period of the server certificate, please ensure that {IDF_TARGET_NAME} has obtained the current time before sending other HTTP commands. (You can configure SNTP and obtain the current time by sending the :ref:`AT+CIPSNTPCFG <cmd-SNTPCFG>` command, and query the current time by sending the :ref:`AT+CIPSNTPTIME? <cmd-SNTPT>` command.)
 
+.. _cmd-HTTPCSNI:
+
+:ref:`AT+HTTPCSNI <HTTP-AT>`: Query or Set HTTP Server Name Indication (SNI)
+----------------------------------------------------------------------------
+
+Query Command
+^^^^^^^^^^^^^
+
+**Function:**
+
+Query the HTTP SNI configuration.
+
+**Command:**
+
+::
+
+    AT+HTTPCSNI?
+
+**Response:**
+
+::
+
+    +HTTPCSNI:<"sni">
+    OK
+
+Set Command
+^^^^^^^^^^^
+
+**Function:**
+
+Set the HTTP SNI.
+
+**Command:**
+
+::
+
+    AT+HTTPCSNI=<"sni">
+
+**Response:**
+
+::
+
+    OK
+
+Parameters
+^^^^^^^^^^
+
+- **<"sni">**: the Server Name Indication in ClientHello. Typically, this is the domain name of the HTTPS server.
+
+Notes
+^^^^^
+
+- This configuration is global. Once set, all HTTP commands will share this SNI.
+- If you want this configuration to take effect immediately, run this command before sending HTTPS requests.
+- Some HTTPS servers require the client to support the SNI extension. If SNI is not set, the TLS handshake may fail.
+
+Example
+^^^^^^^
+
+::
+
+    AT+HTTPCSNI="httpbin.org"
+    AT+HTTPCGET="https://httpbin.org/get"
+
 .. _cmd-HTTPErrCode:
 
 :ref:`HTTP AT Error Codes <HTTP-AT>`
 ------------------------------------
 
-When :ref:`AT+SYSLOG=1 <cmd-SYSLOG>` is enabled, if an HTTP client request fails, AT will return an error code. The error code format is:
+When :ref:`AT+SYSLOG=1 <cmd-SYSLOG>` is enabled, AT outputs error information if an HTTP client request fails.
+
++HTTPERR
+^^^^^^^^
+
+When an HTTP client request fails, AT generally outputs:
+
+::
+
+  +HTTPERR:<http_err>,<tls_err>,<cert_flags>,<sock_errno>
+
+Parameters:
+
+- **<http_err>**: HTTP/TLS stack error code. Typically defined in `esp_err.h <https://github.com/espressif/esp-idf/blob/master/components/esp_common/include/esp_err.h>`_ and `esp_tls_errors.h <https://github.com/espressif/esp-idf/blob/master/components/esp-tls/esp_tls_errors.h>`_. ``0`` means no error at this layer.
+- **<tls_err>**: TLS error code. Typically defined in `mbedtls/ssl.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/ssl.h>`_. ``0`` means no TLS error.
+- **<cert_flags>**: Certificate verification flags. Typically defined in `mbedtls/x509.h <https://github.com/espressif/mbedtls/blob/master/include/mbedtls/x509.h>`_. ``0`` means verification succeeded or was not performed.
+- **<sock_errno>**: Socket errno. Typically defined in `errno.h <https://github.com/espressif/esp-lwip/blob/2.2.0-esp/src/include/lwip/errno.h>`_. ``0`` means no socket error.
+
+ERR CODE
+^^^^^^^^
+
+After the HTTP connection is established, if the HTTP server returns an error, AT generally outputs:
 
 ::
 
   ERR CODE:0x010a7xxx
 
-Where ``01`` is the module identifier, ``0a`` is the module's response result to the executed AT command, and ``7xxx`` represents an HTTP error code. If ``xxx`` falls within the range of standard HTTP status codes, it indicates a standard HTTP status code; otherwise, it indicates an internal error code specific to AT HTTP. The following table lists some common HTTP status codes. For more details, please refer to `RFC 2616 <https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1>`_.
+Where ``01`` is the module identifier, ``0a`` indicates command execution failure, and ``7xxx`` is the HTTP error code. If ``xxx`` is a standard HTTP status code, it is the status code returned by the server; otherwise, it is an AT HTTP internal error code. The following table lists some HTTP error codes. For more status codes, see `RFC 2616 <https://datatracker.ietf.org/doc/html/rfc2616#section-6.1.1>`_.
 
 .. list-table::
   :header-rows: 1

@@ -231,7 +231,7 @@ AT 命令集的源代码不开源，以 :component:`库文件 <at/lib>` 的形�
     .. code-block:: none
 
         # set AT_CUSTOM_COMPONENTS
-        at_custom_cmd_path=os.path.join(os.getcwd(), 'examples/at_custom_cmd')
+        at_custom_cmd_path=os.path.join(os.getcwd(), 'examples', 'at_custom_cmd')
         os.environ['AT_CUSTOM_COMPONENTS']=at_custom_cmd_path
 
 .. _user-compile_at:
