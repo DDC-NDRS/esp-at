@@ -1,6 +1,7 @@
 stages:
   - pre_check
   - build
+  - assign_test
   - deploy
   - deploy_docs
   - post_deploy
@@ -37,6 +38,7 @@ default:
 
 include:
   - '.gitlab/ci/rules.yml'
+  - '.gitlab/ci/at_integration_pipeline.yml'
   - '.gitlab/ci/pre_check.yml'
   - '.gitlab/ci/build_template.yml'
   - '.gitlab/ci/build_docs.yml'

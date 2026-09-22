@@ -1,0 +1,43 @@
+# Pin clone + child include:project ref with a YAML merge key (not a
+# file-level variables: block — that would leak onto every parent job).
+.at_integration_ci_ref: &at_integration_ci_ref
+  AT_CI_REF: "master"
+
+generate_at_integration_child_pipeline:
+  extends: .rules:test:at_integration_pipeline
+  stage: assign_test
+  image: ${TARGET_TEST_DOCKER_IMAGE}
+  tags: ["build", "amd64", "internet"]
+  # Parent integration skips firmware; do not wait on / download build artifacts.
+  needs: []
+  dependencies: []
+  variables:
+    <<: *at_integration_ci_ref
+    GIT_DEPTH: 50
+  before_script:
+    - rm -rf esp_at_ci
+    - git clone --depth 1 -b "${AT_CI_REF}" "${AT_CI_REPO_URL}" esp_at_ci
+  script:
+    - python3 "${CI_PROJECT_DIR}/esp_at_ci/scripts/generate_firmware_child_pipeline.py" --esp-at-root "${CI_PROJECT_DIR}" --esp-at-ci-ref "${AT_CI_REF}" -o at_integration_child.yml
+  artifacts:
+    paths:
+      - at_integration_child.yml
+    expire_in: 1 week
+
+at_integration_child_pipeline:
+  extends: .rules:test:at_integration_pipeline
+  stage: assign_test
+  needs:
+    - generate_at_integration_child_pipeline
+  inherit:
+    variables: false
+  variables:
+    <<: *at_integration_ci_ref
+  trigger:
+    include:
+      - artifact: at_integration_child.yml
+        job: generate_at_integration_child_pipeline
+    strategy: depend
+    forward:
+      yaml_variables: true
+      pipeline_variables: true
