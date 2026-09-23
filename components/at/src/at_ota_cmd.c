@@ -686,7 +686,7 @@ static uint8_t at_setupCmdCipupgrade(uint8_t para_num)
 
         memcpy(param->partition_name, partition_name, strlen((const char *)partition_name));
 
-        if (xTaskCreate(non_blocking_upgrade_task, "nb-ota", NB_OTA_TASK_STACK_SIZE, (void *)param, 5, NULL) != pdPASS) {
+        if (xTaskCreate(non_blocking_upgrade_task, "nb-ota", NB_OTA_TASK_STACK_SIZE, (void *)param, 1, NULL) != pdPASS) {
             free(param);
             param = NULL;
             return ESP_AT_RESULT_CODE_ERROR;
